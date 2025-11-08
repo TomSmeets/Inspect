@@ -4,31 +4,31 @@ Zero-overhead interface for real time Debugging and UI prototyping.
 
 The `inspect` tool embeds debug information into your firmware or executable, exposing types and global variables at runtime.
 The communication protocol betrween the GUI and the target is up to you and can be embedded into any existing communication protocol.
-The communication protocol is kept as minimal as possible to make implemetaiton as simple as possible.
+It is kept intentially minimal to make implementation as simple as possible.
 
-## How do I use this?
+## How to Use
 
-There are two things you need to do to start using this debug interface.
+To start using the debug interface:
 1. Reserve space for a `DEBUG_DATA` table in your firmware by defining a global array.
-2. Call `inspect patch <ELF>` after building your firmware to write the debug information to this table
-3. Implement the `info`, `read` and `write` command handling on te target and on the GUI side over any protocol you like.
+2. Run `inspect patch <ELF>` after building your firmware to populate this talbe with debug information.
+3. Implement the handling of the `info`, `read` and `write` commands on both the target and GUI side over any protocol you choose.
 
 ## The Debug Info Table
 
-Compiled `ELF` binaries contain information about all types and data embedded in `DWARF` format when compiled with `-g`.
-This data is however usually not kept around when flashing embedded devices.
-the `inspect patch` tool reads this information and embeds it into the normal address space for global variables.
+COmpiled ELF binaries contain DWARF debug information about all types and data when compiled with `-g`.
+However this information is usually discared when flashing embedded devices.
 
-This data can then be directly read from memory at runtime.
+The `inspect patch` tool extracts this DWARF data and embeds it into the normal address space as a global variable.
+At runtime, this table can be read directly from memory.
 
+A real-time deubgger GUI can connect to the target over a pre-existing custom protocol (e.g., Serial, Bluetooth, Ethernet, ...)
+and read this debug information using memory read commands.
+With this information the GUI knows exactly where each variable is located and can display a live view of variables and thier values.
 
-A real time debugger GUI can connect to the target over a pre existing custom protocol, for example: UART, Ethernet, etc..,
-and read this embedded debug information using memory read commands.
-Using this information the gui now knoows exactly wehre which variable is located, and can then display a live veiw of these variabels and their values.
+### Reserving space for the debug data
 
-
-To reserve space in your executable for the debug information, incldue the following C / C++ code.
-It is up to you how big you make this table. The patch tool will report how much space is actually needed.
+Include the following C/C++ code to reserve space in your executable for the debug information table.
+The table size is configurable; the patch tool will report the actual space needed.
 
 ```c
 // The following C/C++ code reserves space for the debug_data table
@@ -41,6 +41,7 @@ unsigned int DEBUG_DATA[256] = {
 ```
 
 <details>
+<summary>Rust</summary>
 Something simmilar will also work for other compiled languages. Here is an example for Rust:
 ```rust
 const DEBUG_DATA_SIZE: u32 = 64;
@@ -70,3 +71,9 @@ This command returns a byte array of data contained in main memory of the reques
 Write `size` bytes of data to device `id` at `address`.
 This commands accepts an array of bytes. This data is written to the specified address in main memory.
 - `Write(id: int, addr: int, data: bytes)`
+
+
+# License
+
+This software is free to use and MIT licensed. See LICENSE.txt for more information.
+
