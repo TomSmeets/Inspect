@@ -25,8 +25,6 @@ A real-time debugger GUI can connect to the target over a pre-existing custom pr
 and read this debug information using memory read commands.
 With this information the GUI knows exactly where each variable is located and can display a live view of variables and their values.
 
-### Reserving space for the debug data
-
 Include the following C/C++ code to reserve space in your executable for the debug information table.
 The table size is configurable. the patch tool will report the actual space needed.
 
