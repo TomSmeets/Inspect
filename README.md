@@ -43,6 +43,7 @@ unsigned int DEBUG_DATA[256] = {
 <details>
 <summary>Rust</summary>
 Something simmilar will also work for other compiled languages. Here is an example for Rust:
+
 ```rust
 const DEBUG_DATA_SIZE: u32 = 64;
 #[used]
@@ -54,6 +55,7 @@ pub static mut DEBUG_DATA: [u32; DEBUG_DATA_SIZE as usize] = {
     data
 };
 ```
+
 </details>
 
 ## Communication Protocol
