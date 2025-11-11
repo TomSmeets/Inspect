@@ -1,4 +1,5 @@
 import socket
+import zlib
 import struct
 from store import Store
 
@@ -40,6 +41,7 @@ class Runtime:
         assert magic == DB_MAGIC
         assert data_size <= max_size
         store_data = self.client.read(addr + 16, data_size)
+        store_data = zlib.decompress(store_data)
         self.store.decode(store_data)
         print(f"Found {len(self.store.values)} items")
 
