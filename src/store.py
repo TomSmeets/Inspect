@@ -26,8 +26,6 @@ class ValueTag(Enum):
     Enum = 7
     EnumValue = 8
     Typedef = 9
-    Const = 10
-    Volatile = 11
 
 
 class Value:
@@ -62,7 +60,7 @@ class Value:
 
     def untypedef(self) -> Self:
         """Get bottom most type"""
-        if self.tag in [ValueTag.Typedef, ValueTag.Volatile, ValueTag.Const]:
+        if self.tag in [ValueTag.Typedef]:
             return self.type.untypedef()
         return self
 
@@ -87,10 +85,6 @@ class Value:
             return f"{self.name} = {self.value}"
         if self.tag == ValueTag.Typedef:
             return self.name
-        if self.tag == ValueTag.Const:
-            return f"const {self.type.pretty()}"
-        if self.tag == ValueTag.Volatile:
-            return f"volatile {self.type.pretty()}"
         return None
 
 

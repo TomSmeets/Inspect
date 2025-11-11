@@ -81,12 +81,6 @@ class DwarfDB(Store):
         elif die.tag == "DW_TAG_typedef":
             value = self.put_value(die, ValueTag.Typedef)
             value.type = self.put_type(die)
-        elif die.tag == "DW_TAG_volatile_type":
-            value = self.put_value(die, ValueTag.Volatile)
-            value.type = self.put_type(die)
-        elif die.tag == "DW_TAG_const_type":
-            value = self.put_value(die, ValueTag.Const)
-            value.type = self.put_type(die)
         elif die.tag == "DW_TAG_pointer_type":
             value = self.put_value(die, ValueTag.Pointer)
             value.type = self.put_type(die)
@@ -122,6 +116,10 @@ class DwarfDB(Store):
         elif die.tag == "DW_TAG_formal_parameter":
             value = self.put_value(die, ValueTag.Variable)
             value.type = self.put_type(die)
+        elif die.tag == "DW_TAG_volatile_type":
+            value = self.put_type(die)
+        elif die.tag == "DW_TAG_const_type":
+            value = self.put_type(die)
         else:
             print(die.tag)
             return self.void_value
