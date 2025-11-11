@@ -99,7 +99,7 @@ class DwarfDB(Store):
         elif die.tag == "DW_TAG_member":
             value = self.put_value(die, ValueTag.Variable)
             value.type = self.put_type(die)
-            value.value = die.attributes["DW_AT_data_member_location"].value
+            value.value = die.attributes["DW_AT_data_member_location"].value if "DW_AT_data_member_location" in die.attributes else 0
         elif die.tag == "DW_TAG_enumeration_type":
             value = self.put_value(die, ValueTag.Enum)
             value.children = self.put_children(die, ["DW_TAG_enumerator"])
