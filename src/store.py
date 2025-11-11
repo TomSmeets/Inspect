@@ -101,7 +101,7 @@ class Store:
         data = BytesIO()
         write_u32(data, len(self.values))
         for val in self.values:
-            write_u32(data, val.tag.value)
+            write_u8(data, val.tag.value)
             write_str(data, val.name)
             write_u64(data, val.value if val.value else VALUE_VALUE_NONE)
             write_u32(data, val.type.id if val.type else VALUE_ID_NONE)
@@ -118,7 +118,7 @@ class Store:
         for id in range(0, value_count):
             val = Value()
             val.id = id
-            val.tag = ValueTag(read_u32(data))
+            val.tag = ValueTag(read_u8(data))
             val.name = read_str(data)
             val.value = read_u64(data)
             if val.value == VALUE_VALUE_NONE:
@@ -168,6 +168,13 @@ class Store:
 
 
 # Helper functions for encode/decode
+
+def write_u8(buf: BytesIO, value: int):
+    buf.write(value.to_bytes(1, "little"))
+
+
+def read_u8(buf: BytesIO) -> int:
+    return int.from_bytes(buf.read(1), "little")
 
 
 def write_u32(buf: BytesIO, value: int):
