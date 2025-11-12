@@ -1,155 +1,140 @@
 from elftools.elf.elffile import ELFFile
 from elftools.dwarf.descriptions import describe_DWARF_expr, set_global_machine_arch
-from elftools.dwarf.locationlists import LocationEntry, LocationExpr, LocationParser
+from elftools.dwarf.locationlists import LocationEntry, LocationExpr, LocationParser, LocationLists
 from elftools.dwarf.dwarf_expr import DWARFExprParser
+from elftools.dwarf.dwarfinfo import DWARFInfo
+from elftools.dwarf.compileunit import CompileUnit
+from elftools.dwarf.die import DIE
 import sys
 from typing import Self
-from store import Store, Value, ValueTag
+from value import Value, ValueTag
 
 
-class DwarfDB(Store):
-    def __init__(self, die_to_addr=lambda die: 0):
-        super().__init__()
-        self.mapping = {}
-        self.die_to_addr = die_to_addr
+def load(path: str) -> Value:
+    elf = ELFFile(open(path, "rb"))
+    dwarf: DWARFInfo = elf.get_dwarf_info()
+    location_list: LocationLists = dwarf.location_lists()
+    location_parser = LocationParser(location_list)
+    expr_parser = DWARFExprParser(dwarf.structs)
 
-        # Add a 'void' value (not present in dwarf for some reason)
-        self.void_value = Value()
-        self.void_value.id = 0
-        self.void_value.tag = ValueTag.BaseType
-        self.void_value.name = "void"
-        self.put(self.void_value)
+    # ==== Helpers ====
+    def die_name(die: DIE) -> str:
+        if "DW_AT_name" not in die.attributes:
+            return ""
+        return die.attributes["DW_AT_name"].value.decode()
 
-    def get_id(self, die) -> int:
-        if die.offset not in self.mapping:
+    def value_from_die(die: DIE, tag: ValueTag) -> Value:
+        return Value(tag, die_name(die))
+    
+    def die_to_addr(die: DIE) -> int:
+        if "DW_AT_location" not in die.attributes:
             return None
-        return self.mapping[die.offset]
 
-    def put_children(self, die, filter: [str] = None, need_name: bool = False) -> [Value]:
-        children = []
-        for child in die.iter_children():
-            # Whitelist some tags
-            if filter is not None and child.tag not in filter:
-                continue
+        parsed = location_parser.parse_from_attribute(die.attributes["DW_AT_location"], die.cu["version"], die)
+        expr = expr_parser.parse_expr(parsed.loc_expr)
 
-            if need_name and "DW_AT_name" not in child.attributes:
-                continue
+        # NOTE: This supports only basic addressing for now
+        if len(expr) == 1 and expr[0].op_name == "DW_OP_addr":
+            return expr[0].args[0]
 
-            id = self.put_die(child)
-            if id is not None:
-                children.append(id)
-        return children
+        print("Unknown address expression:", expr)
+        return None
 
-    def put_value(self, die, tag: ValueTag) -> Value:
-        value = Value()
-        value.id = len(self.values)
-        value.tag = tag
+    # Mapping from die offset to value
+    value_cache: dict[int,Value] = {}
+    void_type = Value(ValueTag.BaseType, "void")
 
-        if "DW_AT_name" in die.attributes:
-            value.name = die.attributes["DW_AT_name"].value.decode()
-        self.put(value)
-        self.mapping[die.offset] = value
+    def value_new(die: DIE, tag: ValueTag, value: int = 0) -> Value:
+        value = Value(tag, die_name(die), value)
+        value_cache[die.offset] = value
         return value
 
-    def put_attr(self, die, attr) -> Value:
-        if attr not in die.attributes:
-            return None
-
-        id = self.put_die(die.get_DIE_from_attribute(attr))
-        if id is None:
-            return None
-
-        return id
-
-    def put_type(self, die) -> Value:
+    def visit_typeof(die: DIE) -> Value:
+        # Special case
         if "DW_AT_type" not in die.attributes:
-            return self.void_value
-        return self.put_attr(die, "DW_AT_type")
+            return void_type
+        return visit(die.get_DIE_from_attribute("DW_AT_type"))
 
-    def put_die(self, die) -> Value:
-        # Check if die already exists
-        if die.offset in self.mapping:
-            return self.mapping[die.offset]
+    def visit_children(die: DIE, filter: list[str] = None) -> list[Value]:
+        result = []
+        for child_die in die.iter_children(): # type: DIE
+            if filter is not None and child_die.tag not in filter:
+                continue
+
+            child_value = visit(child_die)
+
+            if child_value is None:
+                continue
+
+            result.append(child_value)
+        return result
+
+    def visit(die: DIE) -> Value:
+        # Check cache
+        if die.offset in value_cache:
+            return value_cache[die.offset]
+
         # Append a value
         if die.tag == "DW_TAG_compile_unit":
-            value = self.put_value(die, ValueTag.CompileUnit)
-            value.children = self.put_children(die, ["DW_TAG_variable"], need_name=True)
+            value = value_new(die, ValueTag.CompileUnit)
+            value.children = visit_children(die, [ "DW_TAG_variable" ])
         elif die.tag == "DW_TAG_variable":
-            value = self.put_value(die, ValueTag.Variable)
-            value.type = self.put_type(die)
-            value.value = self.die_to_addr(die)
+            if "DW_AT_name" not in die.attributes:
+                return None
+            addr = die_to_addr(die)
+            if not addr:
+                return None
+            value = value_new(die, ValueTag.Variable, addr)
+            value.children = [ visit_typeof(die) ]
         elif die.tag == "DW_TAG_typedef":
-            value = self.put_value(die, ValueTag.Typedef)
-            value.type = self.put_type(die)
+            value = value_new(die, ValueTag.Typedef)
+            value.children = [ visit_typeof(die) ]
         elif die.tag == "DW_TAG_pointer_type":
-            value = self.put_value(die, ValueTag.Pointer)
-            value.type = self.put_type(die)
+            value = value_new(die, ValueTag.Pointer)
+            value.children = [ visit_typeof(die) ]
         elif die.tag == "DW_TAG_array_type":
-            value = self.put_value(die, ValueTag.Array)
-            value.type = self.put_type(die)
-            value.value = 1  # Number of array items
-            for child in die.iter_children():
-                if "DW_AT_count" in child.attributes:
-                    value.value *= child.attributes["DW_AT_count"].value
-                elif "DW_AT_upper_bound" in child.attributes:
-                    value.value *= child.attributes["DW_AT_upper_bound"].value + 1
+            value = value_new(die, ValueTag.Array)
+            value.children = [ visit_typeof(die) ]
+
+            # Count number of array items
+            value.value = 1 
+            for child_die in die.iter_children():
+                if "DW_AT_count" in child_die.attributes:
+                    value.value *= child_die.attributes["DW_AT_count"].value
+                elif "DW_AT_upper_bound" in child_die.attributes:
+                    value.value *= child_die.attributes["DW_AT_upper_bound"].value + 1
+
         elif die.tag == "DW_TAG_structure_type" or die.tag == "DW_TAG_class_type" or die.tag == "DW_TAG_union_type":
-            value = self.put_value(die, ValueTag.Struct)
-            value.children = self.put_children(die, ["DW_TAG_member"])
+            value = value_new(die, ValueTag.Struct)
+            value.children = visit_children(die, ["DW_TAG_member"])
         elif die.tag == "DW_TAG_member":
-            value = self.put_value(die, ValueTag.Variable)
-            value.type = self.put_type(die)
+            value = value_new(die, ValueTag.Variable)
             value.value = die.attributes["DW_AT_data_member_location"].value if "DW_AT_data_member_location" in die.attributes else 0
+            value.children = [ visit_typeof(die) ]
         elif die.tag == "DW_TAG_enumeration_type":
-            value = self.put_value(die, ValueTag.Enum)
-            value.children = self.put_children(die, ["DW_TAG_enumerator"])
+            value = value_new(die, ValueTag.Enum)
+            value.children = visit_children(die, ["DW_TAG_enumerator"])
         elif die.tag == "DW_TAG_enumerator":
-            value = self.put_value(die, ValueTag.EnumValue)
+            value = value_new(die, ValueTag.EnumValue)
             value.value = die.attributes["DW_AT_const_value"].value
         elif die.tag == "DW_TAG_base_type":
-            value = self.put_value(die, ValueTag.BaseType)
+            value = value_new(die, ValueTag.BaseType)
             value.value = die.attributes["DW_AT_byte_size"].value
         elif die.tag == "DW_TAG_subroutine_type":
-            value = self.put_value(die, ValueTag.Function)
-            value.type = self.put_type(die)
-            value.children = self.put_children(die)
-        elif die.tag == "DW_TAG_formal_parameter":
-            value = self.put_value(die, ValueTag.Variable)
-            value.type = self.put_type(die)
+            value = self.void_value
         elif die.tag == "DW_TAG_volatile_type":
-            value = self.put_type(die)
+            value = visit_typeof(die)
         elif die.tag == "DW_TAG_const_type":
-            value = self.put_type(die)
+            value = visit_typeof(die)
         else:
-            print(die.tag)
-            return self.void_value
+            value = None
+            print("UNKNOWN TYPE:", die.tag)
         return value
-
-    def load_dwarf(self, file: str):
-        with open(file, "rb") as file:
-            elf = ELFFile(file)
-            dwarf = elf.get_dwarf_info()
-            location_list = dwarf.location_lists()
-            location_parser = LocationParser(location_list)
-            expr_parser = DWARFExprParser(dwarf.structs)
-
-            def die_to_addr(die) -> int:
-                if "DW_AT_location" not in die.attributes:
-                    return None
-
-                cu = die.cu
-                attr = die.attributes["DW_AT_location"]
-                parsed = location_parser.parse_from_attribute(attr, cu["version"], die)
-                expr = expr_parser.parse_expr(parsed.loc_expr)
-
-                # NOTE: This supports only basic addressing for now
-                if len(expr) == 1 and expr[0].op_name == "DW_OP_addr":
-                    return expr[0].args[0]
-
-                print("Unknown address expression:", expr)
-                return None
-
-            self.die_to_addr = die_to_addr
-            for cu in dwarf.iter_CUs():
-                self.put_die(cu.get_top_DIE())
-            self.die_to_addr = None
+        
+    # ==== Parsing ====
+    root = Value(ValueTag.Root, path)
+    for cu in dwarf.iter_CUs(): # type: CompileUnit
+        cu_die: DIE = cu.get_top_DIE()
+        root.children.append(visit(cu_die))
+    elf.close()
+    return root
