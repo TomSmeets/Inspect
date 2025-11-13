@@ -27,41 +27,12 @@ var_y1.children = [type_char]
 cu0.children = [var_x0, var_y0]
 cu1.children = [var_x1, var_y1]
 
-print(root.pretty())
-print(cu0.pretty())
-print(cu1.pretty())
-
-for cu in root.children:
-    print(cu.pretty())
-    for var in cu.children:
-        print(" ", var.pretty())
-
-print("Variables: ")
-for var in root.variables():
-    print(var.pretty())
-
-print("Dedup")
-root = deduplicate(root)
-
-print("Variables: ")
-for var in root.variables():
-    print(var.pretty())
-
-root_2 = decode(encode(root))
-# print("DEDUPE2")
-# deduplicate(root)
-
-print("Root2")
-for cu in root_2.children:
-    print(cu.pretty())
-    for var in cu.children:
-        print(" ", var.pretty())
-
 root = load("main.elf")
-root = deduplicate(root)
+data_normal = encode(root)
+deduplicate(root)
+data_dedup  = encode(root)
 
-data1 = encode(root)
-print(f"size1: {len(data1)} {len(zlib.compress(data1))}")
-data2 = encode(decode(data1))
-print(f"size2: {len(data2)}")
-print(data1 == data2)
+print(f"normal:      {len(data_normal) // 1024}")
+print(f"dedup:       {len(data_dedup) // 1024}")
+print(f"normal zlib: {len(zlib.compress(data_normal)) // 1024}")
+print(f"dedup  zlib: {len(zlib.compress(data_dedup)) // 1024}")

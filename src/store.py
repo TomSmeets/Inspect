@@ -9,17 +9,9 @@ def encode(root: Value) -> bytes:
     # (value, id) pairs
     mapping: dict[Value, int] = {}
 
-    def find(val: Value):
-        if val not in mapping:
-            return None
-        return mapping[val]
-
-    def store(val: Value):
-        found = find(val)
-
-        # Already exists
-        if found is not None:
-            return found
+    def store(val: Value) -> int:
+        if val in mapping:
+            return mapping[val]
 
         # Append new value
         id = len(values)
@@ -36,13 +28,21 @@ def encode(root: Value) -> bytes:
 
     # Encode data
     data = BytesIO()
-    write_u32(data, len(values))
     for i, (val, children) in enumerate(values):
         print("encode", i, val.tag, val.name, children)
+
+    write_u32(data, len(values))
+    for val, _ in values:
         write_u8(data, val.tag.value)
-        write_str(data, val.name)
+    for val, _ in values:
+        write_u32(data, len(val.name))
+    for val, _ in values:
+        data.write(val.name.encode())
+    for val, _ in values:
         write_u64(data, val.value)
+    for val, children in values:
         write_u32(data, len(children))
+    for val, children in values:
         for child in children:
             write_u32(data, child)
     return data.getvalue()
@@ -54,24 +54,21 @@ def decode(data: bytes) -> Value:
     # Values
     value_count = read_u32(data)
     values = []
-    for id in range(0, value_count):
-        tag = ValueTag(read_u8(data))
-        name = read_str(data)
-        value = read_u64(data)
+    ix_list = range(0, value_count)
+    tag_list       = [ValueTag(read_u8(data))               for _ in ix_list]
+    name_len_list  = [read_u32(data)                        for _ in ix_list]
+    name_list      = [buf.read(l).decode()                  for l in name_len_list]
+    value_list     = [read_u64(data)                        for _ in ix_list]
+    child_len_list = [read_u32(data)                        for _ in ix_list]
+    child_list     = [[read_u32(data) for _ in range(0, l)] for l in child_len_list]
 
-        val = Value(tag, name, value)
+    value_list = [ Value(tag, name, value) for tag, name, value in zip(tag_list, name_list, value_list) ]
 
-        child_count = read_u32(data)
-        child_list = []
-        for child in range(0, child_count):
-            child_list.append(read_u32(data))
-        values.append((val, child_list))
-
-    for val, child_list in values:
-        val.children = [values[child][0] for child in child_list]
+    for val, children in zip(value_list, child_list):
+        val.children = [ values[child] for child in children ]
 
     # Return root node (always the first)
-    return values[0][0]
+    return values[0]
 
 
 def write_u8(buf: BytesIO, value: int):
