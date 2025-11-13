@@ -90,8 +90,9 @@ class Value:
 
 
 def value_contents(value: Value) -> tuple:
-    # print(f"value_contents {value.tag} {value.name}")
+    print(f"value_contents {value.tag} {value.name}")
     visited: set[Value] = set()
+    completed: dict[Value, tuple] = {}
 
     def contents_simple(val: Value) -> tuple:
         return (val.tag, val.name, val.value, len(val.children))
@@ -99,6 +100,10 @@ def value_contents(value: Value) -> tuple:
     def contents_full(val: Value) -> tuple:
         # print(f"  {val.tag} {val.name}")
         # Cycle detected, not possible
+        if val in completed:
+            print("Cached")
+            return completed[val]
+
         if val in visited:
             print("cycle")
             return None
@@ -114,7 +119,10 @@ def value_contents(value: Value) -> tuple:
                 return None
 
             children.append(child_cont)
-        return (contents_simple(val), tuple(children))
+
+        cont = (contents_simple(val), tuple(children))
+        completed[val] = cont
+        return cont
 
     return contents_full(value)
 
@@ -200,7 +208,47 @@ def test_dedup2():
     assert value.children == [cu0, cu1, cu0]
 
 
-def value():
+def test_dedup3():
+    value = Value(ValueTag.Root, "root")
+    cu0 = Value(ValueTag.CompileUnit, "CU0")
+    cu1 = Value(ValueTag.CompileUnit, "CU0")
+    cu2 = Value(ValueTag.CompileUnit, "CU0")
+
+    var1 = Value(ValueTag.BaseType, "int1", 1)
+    var2 = Value(ValueTag.BaseType, "int1", 2)
+    var3 = Value(ValueTag.BaseType, "int1", 3)
+    var4 = Value(ValueTag.BaseType, "int1", 4)
+
+    cu0.children = [var1, var2, var3, var4]
+    cu1.children = [var1, var2, var3, var4]
+    cu2.children = [var1, var2, var3, var4]
+    value.children = [cu0, cu1, cu2]
+    deduplicate(value)
+    assert value.children == [cu0, cu0, cu0]
+    assert cu0.children == [var1, var2, var3, var4]
+
+
+def test_dedup4():
+    value = Value(ValueTag.Root, "root")
+    cu0 = Value(ValueTag.CompileUnit, "CU0")
+    cu1 = Value(ValueTag.CompileUnit, "CU0")
+    cu2 = Value(ValueTag.CompileUnit, "CU0")
+
+    var1 = Value(ValueTag.BaseType, "int1", 1)
+    var2 = Value(ValueTag.BaseType, "int1", 1)
+    var3 = Value(ValueTag.BaseType, "int1", 1)
+    var4 = Value(ValueTag.BaseType, "int1", 1)
+
+    cu0.children = [var1, var2, var3, var4]
+    cu1.children = [var1, var2, var3, var4]
+    cu2.children = [var1, var2, var3, var4]
+    value.children = [cu0, cu1, cu2]
+    deduplicate(value)
+    assert value.children == [cu0, cu0, cu0]
+    assert cu0.children == [var1, var1, var1, var1]
+
+
+def test_dedup5():
     root = Value(ValueTag.Root, "Root")
     cu0 = Value(ValueTag.CompileUnit, "CU0")
     cu1 = Value(ValueTag.CompileUnit, "CU1")
@@ -233,6 +281,6 @@ def value():
     cu2.children = [var_x0, var_y0, var_x2, var_y2]
 
     deduplicate(root)
-    assert root.children == [cu0, cu1, cu0]
+    assert root.children == [cu0, cu1, cu1]
     assert cu0.children == [var_x0, var_y0, var_x0, var_y2]
     assert cu1.children == [var_x0, var_y0, var_x0, var_y2]
