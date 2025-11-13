@@ -52,7 +52,6 @@ def load(path: str) -> Value:
         if "DW_AT_type" not in die.attributes:
             return void_type
         value = visit(die.get_DIE_from_attribute("DW_AT_type"))
-        print(value, value.name)
         return value
 
     def visit_children(die: DIE, filter: list[str] = None) -> list[Value]:
