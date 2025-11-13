@@ -23,7 +23,7 @@ def load(path: str) -> Value:
 
     def value_from_die(die: DIE, tag: ValueTag) -> Value:
         return Value(tag, die_name(die))
-    
+
     def die_to_addr(die: DIE) -> int:
         if "DW_AT_location" not in die.attributes:
             return None
@@ -39,7 +39,7 @@ def load(path: str) -> Value:
         return None
 
     # Mapping from die offset to value
-    value_cache: dict[int,Value] = {}
+    value_cache: dict[int, Value] = {}
     void_type = Value(ValueTag.BaseType, "void")
 
     def value_new(die: DIE, tag: ValueTag, value: int = 0) -> Value:
@@ -57,7 +57,7 @@ def load(path: str) -> Value:
 
     def visit_children(die: DIE, filter: list[str] = None) -> list[Value]:
         result = []
-        for child_die in die.iter_children(): # type: DIE
+        for child_die in die.iter_children():  # type: DIE
             if filter is not None and child_die.tag not in filter:
                 continue
 
@@ -77,7 +77,7 @@ def load(path: str) -> Value:
         # Append a value
         if die.tag == "DW_TAG_compile_unit":
             value = value_new(die, ValueTag.CompileUnit)
-            value.children = visit_children(die, [ "DW_TAG_variable" ])
+            value.children = visit_children(die, ["DW_TAG_variable"])
         elif die.tag == "DW_TAG_variable":
             if "DW_AT_name" not in die.attributes:
                 return None
@@ -85,19 +85,19 @@ def load(path: str) -> Value:
             if not addr:
                 return None
             value = value_new(die, ValueTag.Variable, addr)
-            value.children = [ visit_typeof(die) ]
+            value.children = [visit_typeof(die)]
         elif die.tag == "DW_TAG_typedef":
             value = value_new(die, ValueTag.Typedef)
-            value.children = [ visit_typeof(die) ]
+            value.children = [visit_typeof(die)]
         elif die.tag == "DW_TAG_pointer_type":
             value = value_new(die, ValueTag.Pointer)
-            value.children = [ visit_typeof(die) ]
+            value.children = [visit_typeof(die)]
         elif die.tag == "DW_TAG_array_type":
             value = value_new(die, ValueTag.Array)
-            value.children = [ visit_typeof(die) ]
+            value.children = [visit_typeof(die)]
 
             # Count number of array items
-            value.value = 1 
+            value.value = 1
             for child_die in die.iter_children():
                 if "DW_AT_count" in child_die.attributes:
                     value.value *= child_die.attributes["DW_AT_count"].value
@@ -110,7 +110,7 @@ def load(path: str) -> Value:
         elif die.tag == "DW_TAG_member":
             value = value_new(die, ValueTag.Variable)
             value.value = die.attributes["DW_AT_data_member_location"].value if "DW_AT_data_member_location" in die.attributes else 0
-            value.children = [ visit_typeof(die) ]
+            value.children = [visit_typeof(die)]
         elif die.tag == "DW_TAG_enumeration_type":
             value = value_new(die, ValueTag.Enum)
             value.children = visit_children(die, ["DW_TAG_enumerator"])
@@ -132,10 +132,10 @@ def load(path: str) -> Value:
             value = None
             print("UNKNOWN TYPE:", die.tag)
         return value
-        
+
     # ==== Parsing ====
     root = Value(ValueTag.Root, path)
-    for cu in dwarf.iter_CUs(): # type: CompileUnit
+    for cu in dwarf.iter_CUs():  # type: CompileUnit
         cu_die: DIE = cu.get_top_DIE()
         value = visit(cu_die)
         if value is not None:

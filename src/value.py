@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Self
 
+
 class ValueTag(Enum):
     Root = 0
     CompileUnit = 1
@@ -13,8 +14,9 @@ class ValueTag(Enum):
     EnumValue = 8
     Typedef = 9
 
+
 class Value:
-    def __init__(self, tag:ValueTag, name: str, value: int = 0):
+    def __init__(self, tag: ValueTag, name: str, value: int = 0):
         # What kind of value is this?
         # base_type, variable, ... etc
         self.tag = tag
@@ -32,7 +34,7 @@ class Value:
         self.children: list[Self] = []
 
     def type(self) -> Self:
-        if self.tag in [ ValueTag.Variable, ValueTag.Pointer, ValueTag.Array, ValueTag.Typedef ]:
+        if self.tag in [ValueTag.Variable, ValueTag.Pointer, ValueTag.Array, ValueTag.Typedef]:
             return self.children[0]
         return None
 
@@ -90,7 +92,7 @@ class Value:
 def value_contents(value: Value) -> tuple:
     # print(f"value_contents {value.tag} {value.name}")
     visited: set[Value] = set()
-    
+
     def contents_simple(val: Value) -> tuple:
         return (val.tag, val.name, val.value, len(val.children))
 
@@ -109,11 +111,12 @@ def value_contents(value: Value) -> tuple:
             # Cycle detected, skip this
             if child_cont is None:
                 return None
-            
+
             children.append(child_cont)
         return (contents_simple(val), tuple(children))
 
     return contents_full(value)
+
 
 def deduplicate(value: Value) -> Value:
     # Full tree to value mapping
@@ -138,4 +141,5 @@ def deduplicate(value: Value) -> Value:
 
         value.children = [dedup_one(c) for c in value.children]
         return value
+
     return dedup_one(value)
