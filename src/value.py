@@ -89,7 +89,6 @@ class Value:
         return None
 
 
-
 def value_contents(value: Value) -> tuple:
     """
     Attempt to flatten a value recursively to a set of nested tuples.
@@ -152,7 +151,7 @@ def deduplicate(value: Value):
             # Value contains a cycle, so don't deduplicate (too hard)
             value_table[value] = value
         elif cont in dedup_table:
-            # A duplicate exists, replace the value 
+            # A duplicate exists, replace the value
             old_value = value
             value = dedup_table[cont]
             value_table[old_value] = value

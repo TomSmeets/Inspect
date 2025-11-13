@@ -30,15 +30,15 @@ cu0.children = [var_x0, var_y0]
 cu1.children = [var_x1, var_y1]
 
 root = load("main.elf")
-data_normal        = encode(root)
-data_normal_old    = encode(root, stripe=False)
+data_normal = encode(root)
+data_normal_old = encode(root, stripe=False)
 
 start = time.time()
 deduplicate(root)
 end = time.time()
 print(f"Duration:        {int((end - start)*1000):>8} ms")
 data_dedup = encode(root)
-data_dedup_old    = encode(root, stripe=False)
+data_dedup_old = encode(root, stripe=False)
 
 print(f"normal_old:      {len(data_normal_old):>8}")
 print(f"normal:          {len(data_normal):>8}")

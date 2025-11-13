@@ -12,6 +12,7 @@ import socket
 # Used for finding the database in the binary file
 DB_MAGIC: bytes = bytes([0xA1, 0x07, 0x23, 0x45, 0xF0, 0x5C, 0xAE, 0x4C])
 
+
 class SocketClient(Client):
     def __init__(self, host: str, port: int):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

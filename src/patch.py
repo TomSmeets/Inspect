@@ -5,11 +5,12 @@ import zlib
 
 import dwarfdb
 import store
-from value import Value,deduplicate
+from value import Value, deduplicate
 
 opt_verbose = False
 opt_magic = bytes.fromhex("a1072345f05cae4c")
-opt_lang  = "c"
+opt_lang = "c"
+
 
 def help_header(size: int):
     magic_1 = int.from_bytes(opt_magic[0:4], "little")
@@ -67,7 +68,7 @@ def write_db(path: str, data: bytes):
         return
 
     with open(path, "r+b") as file:
-        # Keep header intact (magic + max_size) 
+        # Keep header intact (magic + max_size)
         file.seek(addr + 12)
         # Write actual size
         file.write(len(data).to_bytes(4, "little"))
@@ -76,6 +77,7 @@ def write_db(path: str, data: bytes):
         # Clear rest of the table
         file.write(bytes(size - 16 - len(data)))
     return data
+
 
 def patch(input: str, target: [str]):
     print(f"Reading debug data from '{input}'...")
@@ -102,17 +104,18 @@ def patch(input: str, target: [str]):
         write_db(t, data)
     print("OK")
 
+
 def main():
     global opt_magic
     global opt_verbose
 
     # Randomly generated using:
     # > openssl rand -hex 8
-    parser = argparse.ArgumentParser(prog='patch')
-    parser.add_argument('FILE')
-    parser.add_argument('-v', '--verbose', action='store_true')
-    parser.add_argument('-m', '--magic',   help=f"Table header of 8 bytes (default: {opt_magic.hex()})")
-    parser.add_argument('-t', '--target', help="Apply changes to this file instead of input file", action='append')
+    parser = argparse.ArgumentParser(prog="patch")
+    parser.add_argument("FILE")
+    parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("-m", "--magic", help=f"Table header of 8 bytes (default: {opt_magic.hex()})")
+    parser.add_argument("-t", "--target", help="Apply changes to this file instead of input file", action="append")
     args = parser.parse_args()
     print(args)
 
@@ -136,6 +139,7 @@ def main():
         sys.exit(1)
 
     patch(args.FILE, target)
+
 
 if __name__ == "__main__":
     main()
