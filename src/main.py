@@ -12,35 +12,6 @@ import socket
 # Used for finding the database in the binary file
 DB_MAGIC: bytes = bytes([0xA1, 0x07, 0x23, 0x45, 0xF0, 0x5C, 0xAE, 0x4C])
 
-
-def help_header(size):
-    magic_1 = int.from_bytes(DB_MAGIC[0:4], "little")
-    magic_2 = int.from_bytes(DB_MAGIC[4:8], "little")
-    word_count = (size + 3) // 4
-    name = "DEBUG_DATA"
-    print("Add the following code to reseve space for debug data.")
-    print("---------------- Example Code for C/C++ ----------------")
-    print(f"// Debug data table used by the `inspect` debug tooling")
-    print(f"unsigned int {name}[{word_count}] = {{")
-    print(f"    0x{magic_1:8x},")
-    print(f"    0x{magic_2:8x},")
-    print(f"    sizeof({name})")
-    print(f"}};")
-    print("--------------------------------------------------------")
-
-    # print("---------------- Example Code for Rust -----------------")
-    # print(f"const {name}_SIZE: u32 = {word_count};")
-    # print(f"#[used]")
-    # print(f"pub static mut DEBUG_DATA: [u32; DEBUG_DATA_SIZE as usize] = {{")
-    # print(f"    let mut data = [0u32; DEBUG_DATA_SIZE as usize];")
-    # print(f"    data[0] = 0x{magic_1:8x};")
-    # print(f"    data[1] = 0x{magic_2:8x};")
-    # print(f"    data[2] = 4*DEBUG_DATA_SIZE;")
-    # print(f"    data")
-    # print(f"}};")
-    # print("--------------------------------------------------------")
-
-
 class SocketClient(Client):
     def __init__(self, host: str, port: int):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -61,55 +32,6 @@ class SocketClient(Client):
     def write(self, addr: int, data: bytes):
         self.sock.sendall(struct.pack("<BQQ", 2, addr, len(data)))
         self.sock.sendall(data)
-
-
-def write_db(path: str, data: bytes):
-    """Locate the debug table and write the data to it"""
-    addr: int = None
-    size: int = None
-
-    full_size = len(data) + 16
-    print("Looking for debug table header...")
-    with open(path, "rb") as file:
-        file_data: bytes = file.read()
-        addr = file_data.find(DB_MAGIC)
-        if addr < 0:
-            print("ERROR: The DEBUG_DATA table was not found.")
-            help_header(full_size)
-            sys.exit(1)
-            return
-
-        size = int.from_bytes(file_data[addr + len(DB_MAGIC) : addr + len(DB_MAGIC) + 4], "little")
-    print(f"Found table at {addr:#x} with size={size}")
-
-    print(f"Writing table...")
-    if full_size > size:
-        print()
-        print(f"ERROR: Debug talbe is too small, it should support at least {full_size} bytes.")
-        help_header(full_size)
-        sys.exit(1)
-        return
-
-    with open(path, "r+b") as file:
-        file.seek(addr)
-        file.write(DB_MAGIC)
-        file.write(size.to_bytes(4, "little"))
-        file.write(len(data).to_bytes(4, "little"))
-        file.write(data)
-        file.write(bytes(size - 16 - len(data)))
-    return data
-
-
-def patch(dwarf: str, bin: str):
-    print(f"Reading debug data from '{dwarf}'...")
-    db = DwarfDB()
-    db.load_dwarf(dwarf)
-    data = db.encode()
-    data = zlib.compress(data)
-    print(f"Data size is {len(data) + 16} bytes")
-    print(f"Writing debug data to '{bin}'...")
-    write_db(bin, data)
-    print("OK")
 
 
 def connect(host: str, port: int):
