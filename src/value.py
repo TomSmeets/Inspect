@@ -75,7 +75,7 @@ class Value:
 
     def variables(self) -> list[Self]:
         if self.tag == ValueTag.Root:
-            return set(v for c in self.children for v in c.variables())
+            return [v for c in self.children for v in c.variables()]
 
         if self.tag == ValueTag.CompileUnit:
             return self.children

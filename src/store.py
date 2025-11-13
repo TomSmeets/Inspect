@@ -28,33 +28,20 @@ def encode(root: Value, stripe: bool = True) -> bytes:
 
     # Encode data
     data = BytesIO()
-    # for i, (val, children) in enumerate(values):
-    #     print("encode", i, val.tag, val.name, children)
-
     write_u32(data, len(values))
-    if stripe:
-        for val, _ in values:
-            write_u8(data, val.tag.value)
-        for val, _ in values:
-            write_u32(data, len(val.name))
-        for val, _ in values:
-            data.write(val.name.encode())
-        for val, _ in values:
-            write_u64(data, val.value)
-        for val, children in values:
-            write_u32(data, len(children))
-        for val, children in values:
-            for child in children:
-                write_u32(data, child)
-    else:
-        for val, children in values:
-            write_u8(data, val.tag.value)
-            write_u32(data, len(val.name))
-            data.write(val.name.encode())
-            write_u64(data, val.value)
-            write_u32(data, len(children))
-            for child in children:
-                write_u32(data, child)
+    for val, _ in values:
+        write_u8(data, val.tag.value)
+    for val, _ in values:
+        write_u32(data, len(val.name))
+    for val, _ in values:
+        data.write(val.name.encode())
+    for val, _ in values:
+        write_u64(data, val.value)
+    for val, children in values:
+        write_u32(data, len(children))
+    for val, children in values:
+        for child in children:
+            write_u32(data, child)
     return data.getvalue()
 
 
@@ -63,18 +50,16 @@ def decode(data: bytes) -> Value:
 
     # Values
     value_count = read_u32(data)
-    values = []
     ix_list = range(0, value_count)
     tag_list = [ValueTag(read_u8(data)) for _ in ix_list]
     name_len_list = [read_u32(data) for _ in ix_list]
-    name_list = [buf.read(l).decode() for l in name_len_list]
+    name_list = [data.read(l).decode() for l in name_len_list]
     value_list = [read_u64(data) for _ in ix_list]
     child_len_list = [read_u32(data) for _ in ix_list]
     child_list = [[read_u32(data) for _ in range(0, l)] for l in child_len_list]
 
-    value_list = [Value(tag, name, value) for tag, name, value in zip(tag_list, name_list, value_list)]
-
-    for val, children in zip(value_list, child_list):
+    values  = [Value(tag, name, value) for tag, name, value in zip(tag_list, name_list, value_list)]
+    for val, children in zip(values, child_list):
         val.children = [values[child] for child in children]
 
     # Return root node (always the first)

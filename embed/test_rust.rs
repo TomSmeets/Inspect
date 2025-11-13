@@ -1,4 +1,6 @@
 use std::net::TcpListener;
+use std::io::Read;
+use std::io::Write;
 
 const DEBUG_DATA_SIZE: u32 = 64;
 
@@ -15,8 +17,23 @@ fn main() {
     println!("Hello World!");
     let listener = TcpListener::bind("127.0.0.1:1234").unwrap();
     for stream in listener.incoming() {
-        let stream = stream.unwrap();
-        let _ = stream;
+        let mut stream = stream.unwrap();
         println!("Connection established!");
+
+        loop {
+            let mut command = [ 0 ];
+            let n = stream.read(&mut command);
+            if !n.is_ok() {
+                break;
+            }
+            println!("command: {}", command[0]);
+            if command[0] == 0 {
+                unsafe {
+                    let kira = &DEBUG_DATA[0] as *const u32 as usize;
+                    let bytes: [u8; 8] = kira.to_le_bytes();
+                    stream.write(&bytes).unwrap();
+                }
+            }
+        }
     }
 }

@@ -19,26 +19,28 @@ def help_header(size: int):
     word_count = (size + 3) // 4
     name = "DEBUG_DATA"
     print("Add the following code to reseve space for debug data.")
-    print("---------------- Example Code for C/C++ ----------------")
-    print(f"// Debug data table used by the `inspect` debug tooling")
-    print(f"unsigned int {name}[{word_count}] = {{")
-    print(f"    0x{magic_1:8x},")
-    print(f"    0x{magic_2:8x},")
-    print(f"    sizeof({name})")
-    print(f"}};")
-    print("--------------------------------------------------------")
 
-    # print("---------------- Example Code for Rust -----------------")
-    # print(f"const {name}_SIZE: u32 = {word_count};")
-    # print(f"#[used]")
-    # print(f"pub static mut DEBUG_DATA: [u32; DEBUG_DATA_SIZE as usize] = {{")
-    # print(f"    let mut data = [0u32; DEBUG_DATA_SIZE as usize];")
-    # print(f"    data[0] = 0x{magic_1:8x};")
-    # print(f"    data[1] = 0x{magic_2:8x};")
-    # print(f"    data[2] = 4*DEBUG_DATA_SIZE;")
-    # print(f"    data")
-    # print(f"}};")
-    # print("--------------------------------------------------------")
+    if opt_lang == "c":
+        print("---------------- Example Code for C/C++ ----------------")
+        print(f"// Debug data table used by the `inspect` debug tooling")
+        print(f"unsigned int {name}[{word_count}] = {{")
+        print(f"    0x{magic_1:8x},")
+        print(f"    0x{magic_2:8x},")
+        print(f"    sizeof({name})")
+        print(f"}};")
+        print("--------------------------------------------------------")
+    elif opt_lang == "rust":
+        print("---------------- Example Code for Rust -----------------")
+        print(f"const {name}_SIZE: u32 = {word_count};")
+        print(f"#[used]")
+        print(f"pub static mut {name}: [u32; {name}_SIZE as usize] = {{")
+        print(f"    let mut data = [0u32; {name}_SIZE as usize];")
+        print(f"    data[0] = 0x{magic_1:8x};")
+        print(f"    data[1] = 0x{magic_2:8x};")
+        print(f"    data[2] = 4*{name}_SIZE;")
+        print(f"    data")
+        print(f"}};")
+        print("--------------------------------------------------------")
 
 
 def write_db(path: str, data: bytes):
@@ -111,7 +113,7 @@ def main():
 
     # Randomly generated using:
     # > openssl rand -hex 8
-    parser = argparse.ArgumentParser(prog="patch")
+    parser = argparse.ArgumentParser()
     parser.add_argument("FILE")
     parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("-m", "--magic", help=f"Table header of 8 bytes (default: {opt_magic.hex()})")
