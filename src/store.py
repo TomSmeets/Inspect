@@ -58,7 +58,7 @@ def decode(data: bytes) -> Value:
     child_len_list = [read_u32(data) for _ in ix_list]
     child_list = [[read_u32(data) for _ in range(0, l)] for l in child_len_list]
 
-    values  = [Value(tag, name, value) for tag, name, value in zip(tag_list, name_list, value_list)]
+    values = [Value(tag, name, value) for tag, name, value in zip(tag_list, name_list, value_list)]
     for val, children in zip(values, child_list):
         val.children = [values[child] for child in children]
 

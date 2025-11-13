@@ -6,6 +6,7 @@ import argparse
 import time
 from value import Value, ValueTag
 
+
 class Client:
     def __init__(self, host: str, port: int):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -30,6 +31,7 @@ class Client:
         self.sock.sendall(struct.pack("<BQQ", 2, addr, len(data)))
         self.sock.sendall(data)
 
+
 class Runtime:
 
     def __init__(self, client: Client):
@@ -40,10 +42,9 @@ class Runtime:
     def find_variable(self, name: str) -> (Value, Value):
         for cu in self.root.children:
             for var in cu.children:
-                if var.name ==name:
+                if var.name == name:
                     return (cu, var)
         return None
-        
 
     def read_database(self, symbol_name: str = "DEBUG_DATA"):
         addr = self.client.info()
