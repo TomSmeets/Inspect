@@ -89,8 +89,13 @@ class Value:
         return None
 
 
+
 def value_contents(value: Value) -> tuple:
-    print(f"value_contents {value.tag} {value.name}")
+    """
+    Attempt to flatten a value recursively to a set of nested tuples.
+    Will return None when the value contains a cycle
+    """
+    # print(f"=== value_contents {value.tag} {value.name} ===")
     visited: set[Value] = set()
     completed: dict[Value, tuple] = {}
 
@@ -99,13 +104,13 @@ def value_contents(value: Value) -> tuple:
 
     def contents_full(val: Value) -> tuple:
         # print(f"  {val.tag} {val.name}")
-        # Cycle detected, not possible
         if val in completed:
-            print("Cached")
+            # print("* Cached *")
             return completed[val]
 
+        # Cycle detected, not possible
         if val in visited:
-            print("cycle")
+            # print("== Cycle ==")
             return None
 
         visited.add(val)
@@ -128,23 +133,32 @@ def value_contents(value: Value) -> tuple:
 
 
 def deduplicate(value: Value):
+    """
+    Deduplicate values in the tree
+    """
     # Full tree to value mapping
     dedup_table: dict[tuple, Value] = dict()
     value_table: dict[Value, Value] = dict()
 
     def dedup_one(value: Value):
+        # Check if the value was already deduplicated
         if value in value_table:
             return value_table[value]
 
+        # Compute value flattend content for equality checks
         cont = value_contents(value)
 
         if cont is None:
+            # Value contains a cycle, so don't deduplicate (too hard)
             value_table[value] = value
         elif cont in dedup_table:
+            # A duplicate exists, replace the value 
             old_value = value
             value = dedup_table[cont]
             value_table[old_value] = value
+            return value
         else:
+            # no duplicate exists yet
             value_table[value] = value
             dedup_table[cont] = value
 

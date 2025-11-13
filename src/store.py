@@ -2,7 +2,7 @@ from io import BytesIO
 from value import Value, ValueTag
 
 
-def encode(root: Value) -> bytes:
+def encode(root: Value, stripe: bool = True) -> bytes:
     # value, children, pairs
     values: list[(Value, list[int])] = []
 
@@ -28,23 +28,33 @@ def encode(root: Value) -> bytes:
 
     # Encode data
     data = BytesIO()
-    for i, (val, children) in enumerate(values):
-        print("encode", i, val.tag, val.name, children)
+    # for i, (val, children) in enumerate(values):
+    #     print("encode", i, val.tag, val.name, children)
 
     write_u32(data, len(values))
-    for val, _ in values:
-        write_u8(data, val.tag.value)
-    for val, _ in values:
-        write_u32(data, len(val.name))
-    for val, _ in values:
-        data.write(val.name.encode())
-    for val, _ in values:
-        write_u64(data, val.value)
-    for val, children in values:
-        write_u32(data, len(children))
-    for val, children in values:
-        for child in children:
-            write_u32(data, child)
+    if stripe:
+        for val, _ in values:
+            write_u8(data, val.tag.value)
+        for val, _ in values:
+            write_u32(data, len(val.name))
+        for val, _ in values:
+            data.write(val.name.encode())
+        for val, _ in values:
+            write_u64(data, val.value)
+        for val, children in values:
+            write_u32(data, len(children))
+        for val, children in values:
+            for child in children:
+                write_u32(data, child)
+    else:
+        for val, children in values:
+            write_u8(data, val.tag.value)
+            write_u32(data, len(val.name))
+            data.write(val.name.encode())
+            write_u64(data, val.value)
+            write_u32(data, len(children))
+            for child in children:
+                write_u32(data, child)
     return data.getvalue()
 
 
