@@ -55,17 +55,17 @@ def decode(data: bytes) -> Value:
     value_count = read_u32(data)
     values = []
     ix_list = range(0, value_count)
-    tag_list       = [ValueTag(read_u8(data))               for _ in ix_list]
-    name_len_list  = [read_u32(data)                        for _ in ix_list]
-    name_list      = [buf.read(l).decode()                  for l in name_len_list]
-    value_list     = [read_u64(data)                        for _ in ix_list]
-    child_len_list = [read_u32(data)                        for _ in ix_list]
-    child_list     = [[read_u32(data) for _ in range(0, l)] for l in child_len_list]
+    tag_list = [ValueTag(read_u8(data)) for _ in ix_list]
+    name_len_list = [read_u32(data) for _ in ix_list]
+    name_list = [buf.read(l).decode() for l in name_len_list]
+    value_list = [read_u64(data) for _ in ix_list]
+    child_len_list = [read_u32(data) for _ in ix_list]
+    child_list = [[read_u32(data) for _ in range(0, l)] for l in child_len_list]
 
-    value_list = [ Value(tag, name, value) for tag, name, value in zip(tag_list, name_list, value_list) ]
+    value_list = [Value(tag, name, value) for tag, name, value in zip(tag_list, name_list, value_list)]
 
     for val, children in zip(value_list, child_list):
-        val.children = [ values[child] for child in children ]
+        val.children = [values[child] for child in children]
 
     # Return root node (always the first)
     return values[0]

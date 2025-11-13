@@ -30,7 +30,7 @@ cu1.children = [var_x1, var_y1]
 root = load("main.elf")
 data_normal = encode(root)
 deduplicate(root)
-data_dedup  = encode(root)
+data_dedup = encode(root)
 
 print(f"normal:      {len(data_normal) // 1024}")
 print(f"dedup:       {len(data_dedup) // 1024}")
