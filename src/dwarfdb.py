@@ -5,8 +5,6 @@ from elftools.dwarf.dwarf_expr import DWARFExprParser
 from elftools.dwarf.dwarfinfo import DWARFInfo
 from elftools.dwarf.compileunit import CompileUnit
 from elftools.dwarf.die import DIE
-import sys
-from typing import Self
 from value import Value, ValueTag
 
 
@@ -53,7 +51,9 @@ def load(path: str) -> Value:
         # Special case
         if "DW_AT_type" not in die.attributes:
             return void_type
-        return visit(die.get_DIE_from_attribute("DW_AT_type"))
+        value = visit(die.get_DIE_from_attribute("DW_AT_type"))
+        print(value, value.name)
+        return value
 
     def visit_children(die: DIE, filter: list[str] = None) -> list[Value]:
         result = []
@@ -121,10 +121,12 @@ def load(path: str) -> Value:
             value = value_new(die, ValueTag.BaseType)
             value.value = die.attributes["DW_AT_byte_size"].value
         elif die.tag == "DW_TAG_subroutine_type":
-            value = self.void_value
+            value = void_type
         elif die.tag == "DW_TAG_volatile_type":
             value = visit_typeof(die)
         elif die.tag == "DW_TAG_const_type":
+            value = visit_typeof(die)
+        elif die.tag == "DW_TAG_atomic_type":
             value = visit_typeof(die)
         else:
             value = None
@@ -135,6 +137,8 @@ def load(path: str) -> Value:
     root = Value(ValueTag.Root, path)
     for cu in dwarf.iter_CUs(): # type: CompileUnit
         cu_die: DIE = cu.get_top_DIE()
-        root.children.append(visit(cu_die))
+        value = visit(cu_die)
+        if value is not None:
+            root.children.append(value)
     elf.close()
     return root

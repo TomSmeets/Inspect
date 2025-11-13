@@ -2,14 +2,16 @@ from io import BytesIO
 from value import Value, ValueTag
 
 def encode(root: Value) -> bytes:
-    # (value, child_ix) pairs
-    values = []
+    # value, children, pairs
+    values: list[(Value, list[int])] = []
+
+    # (value, id) pairs
+    mapping: dict[Value, int] = {}
 
     def find(val: Value):
-        for i,(v, _) in enumerate(values):
-            if v == val:
-                return i
-        return None
+        if val not in mapping:
+            return None
+        return mapping[val]
 
     def store(val: Value):
         found = find(val)
@@ -21,6 +23,7 @@ def encode(root: Value) -> bytes:
         # Append new value
         id = len(values)
         values.append((val, []))
+        mapping[val] = id
 
         # Visit children
         for child in val.children:
@@ -33,7 +36,8 @@ def encode(root: Value) -> bytes:
     # Encode data
     data = BytesIO()
     write_u32(data, len(values))
-    for (val, children) in values:
+    for (i, (val, children)) in enumerate(values):
+        print("encode", i, val.tag, val.name, children)
         write_u8(data, val.tag.value)
         write_str(data, val.name)
         write_u64(data, val.value)
@@ -52,7 +56,6 @@ def decode(data: bytes) -> Value:
         tag  = ValueTag(read_u8(data))
         name = read_str(data)
         value = read_u64(data)
-        print(f"decode {tag} {name}")
 
         val = Value(tag, name, value)
 
@@ -63,7 +66,7 @@ def decode(data: bytes) -> Value:
         values.append((val, child_list))
 
     for (val, child_list) in values:
-        val.children = [ values[child] for child in child_list ]
+        val.children = [ values[child][0] for child in child_list ]
 
     # Return root node (always the first)
     return values[0][0]

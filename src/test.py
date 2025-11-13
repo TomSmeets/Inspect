@@ -1,6 +1,7 @@
 from value import Value, ValueTag,deduplicate
 from store import encode,decode
 from dwarfdb import load
+import zlib
 
 root = Value(ValueTag.Root, "Root")
 
@@ -55,4 +56,12 @@ for cu in root_2.children:
     print(cu.pretty())
     for var in cu.children:
         print(" ", var.pretty())
+
 root = load("main.elf")
+root = deduplicate(root)
+
+data1 = encode(root)
+print(f"size1: {len(data1)} {len(zlib.compress(data1))}")
+data2 = encode(decode(data1))
+print(f"size2: {len(data2)}")
+print(data1 == data2)

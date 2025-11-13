@@ -121,24 +121,18 @@ def deduplicate(value: Value) -> Value:
     value_table: dict[Value, Value] = dict()
 
     def dedup_one(value: Value):
-        print(f"dedup {value.tag}")
         if value in value_table:
-            print(f"> Already deduped")
             return value_table[value]
 
         cont = value_contents(value)
-        print(f"> cont {hash(cont)}")
 
         if cont is None:
-            print(f"> Had cycle!")
             value_table[value] = value
         elif cont in dedup_table:
-            print(f"> DEDUPED!")
             old_value = value
             value = dedup_table[cont]
             value_table[old_value] = value
         else:
-            print(f"> New value!")
             value_table[value] = value
             dedup_table[cont] = value
 
