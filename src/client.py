@@ -39,6 +39,7 @@ class Client:
     def write_int(self, addr: int, len: int, data: int):
         self.client.write(addr, data.to_bytes(len, "little"))
 
+
 class Runtime:
 
     def __init__(self, client: Client):
@@ -77,7 +78,7 @@ class RtNode:
         self.children = []
 
     def expand(self):
-        self.children = [ RtNode(n) for n in self.value.children ]
+        self.children = [RtNode(n) for n in self.value.children]
 
     def collapse(self):
         self.children = []
@@ -85,11 +86,12 @@ class RtNode:
     def pretty(self) -> str:
         return self.value.pretty()
 
-    def draw(self, x:int=0) -> list[(Self, int)]:
-        lines = [ (self, x) ]
+    def draw(self, x: int = 0) -> list[(Self, int)]:
+        lines = [(self, x)]
         for c in self.children:
             lines += c.draw(x + 1)
         return lines
+
 
 def main(scr):
     curses.curs_set(0)
@@ -113,18 +115,17 @@ def main(scr):
         scr.clear()
         curses.update_lines_cols()
 
-        lines = [ l for c in root.children for l in c.draw() ]
+        lines = [l for c in root.children for l in c.draw()]
         if cursor < 0:
             cursor = 0
         if cursor >= len(lines):
-            cursor = len(lines)-1
-
+            cursor = len(lines) - 1
 
         screen_pad = 6
-        if scroll <  cursor + screen_pad - curses.LINES:
+        if scroll < cursor + screen_pad - curses.LINES:
             scroll = cursor + screen_pad - curses.LINES
 
-        if scroll >  cursor - screen_pad:
+        if scroll > cursor - screen_pad:
             scroll = cursor - screen_pad
 
         if scroll < 0:
@@ -138,36 +139,36 @@ def main(scr):
 
         for node, x in lines[scroll:]:
             if y >= curses.LINES:
-                break;
+                break
 
             if node == cur_node:
-                scr.addstr(y, 10 + x*4, node.value.name, curses.A_REVERSE)
+                scr.addstr(y, 10 + x * 4, node.value.name, curses.A_REVERSE)
             else:
-                scr.addstr(y, 10 + x*4, node.value.name)
+                scr.addstr(y, 10 + x * 4, node.value.name)
             y += 1
 
         scr.refresh()
         k = scr.getkey()
-        if k == 'q':
+        if k == "q":
             break
-        elif k == 'j':
+        elif k == "j":
             cursor += 1
-        elif k == 'k':
+        elif k == "k":
             cursor -= 1
-        elif k == 'l':
+        elif k == "l":
             if cur_node.children == []:
                 cur_node.expand()
             cursor += 1
-        elif k == ' ':
+        elif k == " ":
             if cur_node.children == []:
                 cur_node.expand()
             else:
                 cur_node.collapse()
-        elif k == 'h':
+        elif k == "h":
             if cur_node.children == []:
                 while cursor > 0:
                     cursor -= 1
-                    n,x = lines[cursor]
+                    n, x = lines[cursor]
                     if x < cur_node_x:
                         n.collapse()
                         break
