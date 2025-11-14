@@ -4,6 +4,8 @@ import struct
 import store
 import argparse
 import time
+import curses
+from typing import Self
 from value import Value, ValueTag
 
 
@@ -31,6 +33,11 @@ class Client:
         self.sock.sendall(struct.pack("<BQQ", 2, addr, len(data)))
         self.sock.sendall(data)
 
+    def read_int(self, addr: int, len: int) -> int:
+        return int.from_bytes(self.client.read(addr, len), "little")
+
+    def write_int(self, addr: int, len: int, data: int):
+        self.client.write(addr, data.to_bytes(len, "little"))
 
 class Runtime:
 
@@ -63,20 +70,30 @@ class Runtime:
         self.base_address = addr - base_var.value
         print(f"Base address: {self.base_address:#x}")
 
-    def read(self, addr: int, size: int) -> bytes:
-        return self.client.read(addr, size)
 
-    def write(self, addr: int, data: bytes):
-        self.client.write(addr, data)
+class RtNode:
+    def __init__(self, value: Value):
+        self.value = value
+        self.children = []
 
-    def read_int(self, addr: int, len: int) -> int:
-        return int.from_bytes(self.client.read(addr, len), "little")
+    def expand(self):
+        self.children = [ RtNode(n) for n in self.value.children ]
 
-    def write_int(self, addr: int, len: int, data: int):
-        self.client.write(addr, data.to_bytes(len, "little"))
+    def collapse(self):
+        self.children = []
 
+    def pretty(self) -> str:
+        return self.value.pretty()
 
-def main():
+    def draw(self, x:int=0) -> list[(Self, int)]:
+        lines = [ (self, x) ]
+        for c in self.children:
+            lines += c.draw(x + 1)
+        return lines
+
+def main(scr):
+    curses.curs_set(0)
+
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-c", "--host", default="localhost", help="Router host")
     parser.add_argument("-p", "--port", type=int, default=1234, help="Router port")
@@ -86,19 +103,89 @@ def main():
     rt = Runtime(client)
     rt.read_database("DEBUG_DATA")
 
+    cursor = 0
+    scroll = 0
+
+    root = RtNode(rt.root)
+    root.expand()
+
     while True:
-        print("")
-        for v in rt.root.variables():
-            print(v.pretty(), end="")
-            type = v.type().untypedef()
+        scr.clear()
+        curses.update_lines_cols()
 
-            if type.tag == ValueTag.BaseType:
-                print(" = ", end="")
-                print(rt.read_int(rt.base_address + v.value, type.value), end="")
+        lines = [ l for c in root.children for l in c.draw() ]
+        if cursor < 0:
+            cursor = 0
+        if cursor >= len(lines):
+            cursor = len(lines)-1
 
-            print(";")
-        time.sleep(1)
+
+        screen_pad = 6
+        if scroll <  cursor + screen_pad - curses.LINES:
+            scroll = cursor + screen_pad - curses.LINES
+
+        if scroll >  cursor - screen_pad:
+            scroll = cursor - screen_pad
+
+        if scroll < 0:
+            scroll = 0
+
+        cur_node, cur_node_x = lines[cursor]
+
+        y = 0
+        scr.addstr(y, 0, f"{cursor} / {len(lines)} {curses.LINES} {curses.COLS}")
+        y += 1
+
+        for node, x in lines[scroll:]:
+            if y >= curses.LINES:
+                break;
+
+            if node == cur_node:
+                scr.addstr(y, 10 + x*4, node.value.name, curses.A_REVERSE)
+            else:
+                scr.addstr(y, 10 + x*4, node.value.name)
+            y += 1
+
+        scr.refresh()
+        k = scr.getkey()
+        if k == 'q':
+            break
+        elif k == 'j':
+            cursor += 1
+        elif k == 'k':
+            cursor -= 1
+        elif k == 'l':
+            if cur_node.children == []:
+                cur_node.expand()
+            cursor += 1
+        elif k == ' ':
+            if cur_node.children == []:
+                cur_node.expand()
+            else:
+                cur_node.collapse()
+        elif k == 'h':
+            if cur_node.children == []:
+                while cursor > 0:
+                    cursor -= 1
+                    n,x = lines[cursor]
+                    if x < cur_node_x:
+                        n.collapse()
+                        break
+            else:
+                cur_node.collapse()
+
+    # while True:
+    #     print("")
+    #     for v in rt.root.variables():
+    #         print(v.pretty(), end="")
+    #         type = v.type().untypedef()
+
+    #         if type.tag == ValueTag.BaseType:
+    #             print(" = ", end="")
+    #             print(rt.read_int(rt.base_address + v.value, type.value), end="")
+
+    #         print(";")
 
 
 if __name__ == "__main__":
-    main()
+    curses.wrapper(main)
