@@ -7,11 +7,31 @@ from client import Client
 
 
 class RtNode:
-    def __init__(self, value: Value):
+    def __init__(self, value: Value, name: str = None):
+        self.name = name
         self.value = value
         self.children = []
 
+        if not self.name:
+            self.name = self.value.pretty()
+
     def expand(self):
+        type = self.value.type()
+        if not type:
+            self.children = [RtNode(n) for n in self.value.children]
+            return
+
+        while True:
+            if type.tag == ValueTag.Variable:
+                type = type.type()
+            elif type.tag == ValueTag.Typedef:
+                type = type.type()
+            elif type.tag == ValueTag.Array:
+                self.children = [RtNode(type.type(), f"[{i:2}]") for i in range(0, type.value)]
+                return
+            else:
+                break
+            
         self.children = [RtNode(n) for n in self.value.children]
 
     def collapse(self):
@@ -21,11 +41,115 @@ class RtNode:
         return self.value.pretty()
 
     def draw(self, x: int = 0) -> list[(Self, int)]:
-        lines = [(self, x)]
+        name = f"{self.name}"
+        lines = [(self, x, name)]
         for c in self.children:
             lines += c.draw(x + 1)
         return lines
 
+class Gui:
+
+    def __init__(self, client: Client):
+        self.client = client
+
+        # Tree of expanded nodes
+        self.node = RtNode(client.root)
+        self.node.expand()
+
+        # Current highlighed line
+        self.cursor = 0
+
+        # Scroll offset
+        self.scroll = 0
+
+        # List of flattend nodes and indentation level
+        self.lines: list[(RtNode, int, str)] = []
+
+    def update(self):
+        self.lines = [l for c in self.node.children for l in c.draw()]
+        self.cursor_update()
+
+    def cursor_update(self):
+        if self.cursor < 0:
+            self.cursor = 0
+        if self.cursor >= len(self.lines):
+            self.cursor = len(self.lines) - 1
+
+    def cursor_node(self) -> RtNode:
+        if self.lines == []:
+            return None
+        return self.lines[self.cursor][0]
+
+    def cursor_x(self) -> int:
+        if self.lines == []:
+            return 0
+        return self.lines[self.cursor][1]
+
+    def cursor_prev(self) -> bool:
+        if self.cursor == 0:
+            return False
+        self.cursor -= 1
+        return True
+
+    def cursor_next(self) -> bool:
+        if self.cursor + 1 >= len(self.lines):
+            return False
+        self.cursor += 1
+        return True
+
+    def cursor_down(self):
+        if self.cursor_node().children == []:
+            self.cursor_node().expand()
+        if self.cursor_node().children != []:
+            self.cursor_next()
+
+    def cursor_up(self):
+        cur_x = self.cursor_x()
+        while self.cursor_prev():
+            if self.cursor_x() < cur_x:
+                break
+        if self.cursor_node().children != []:
+            self.cursor_node().collapse()
+
+    def cursor_toggle(self):
+        if self.cursor_node().children == []:
+            self.cursor_node().expand()
+        else:
+            self.cursor_node().collapse()
+
+    def draw(self, scr):
+        size_x = curses.COLS
+        size_y = curses.LINES
+
+        # Update scroll
+        screen_pad = 6
+        if self.scroll < self.cursor + screen_pad - size_y:
+            self.scroll = self.cursor + screen_pad - size_y
+        if self.scroll > self.cursor - screen_pad:
+            self.scroll = self.cursor - screen_pad
+        if self.scroll < 0:
+            self.scroll = 0
+
+        # Draw info
+        y = 0
+        cur_node = self.cursor_node()
+        for node, x, text in self.lines[self.scroll:]:
+            if y >= size_y:
+                break
+
+            indent = x*4
+            if indent >= size_x:
+                indent = size_x-1
+            text = f"| {text}"
+
+            # Limit length
+            text = text[:size_x-indent]
+
+            if node == cur_node:
+                scr.addstr(y, indent, text, curses.A_REVERSE)
+            else:
+                scr.addstr(y, indent, text)
+            y += 1
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -37,79 +161,33 @@ def main():
     client = Client()
     client.connect(args.host, args.port, args.symbol)
 
-    def gui(scr):
+    gui = Gui(client)
+
+    def gui_main(scr):
         curses.curs_set(0)
-
-        cursor = 0
-        scroll = 0
-
-        root = RtNode(client.root)
-        root.expand()
         while True:
-            scr.clear()
+            gui.update()
+
             curses.update_lines_cols()
-
-            lines = [l for c in root.children for l in c.draw()]
-            if cursor < 0:
-                cursor = 0
-            if cursor >= len(lines):
-                cursor = len(lines) - 1
-
-            screen_pad = 6
-            if scroll < cursor + screen_pad - curses.LINES:
-                scroll = cursor + screen_pad - curses.LINES
-
-            if scroll > cursor - screen_pad:
-                scroll = cursor - screen_pad
-
-            if scroll < 0:
-                scroll = 0
-
-            cur_node, cur_node_x = lines[cursor]
-
-            y = 0
-            scr.addstr(y, 0, f"{cursor} / {len(lines)} {curses.LINES} {curses.COLS}")
-            y += 1
-
-            for node, x in lines[scroll:]:
-                if y >= curses.LINES:
-                    break
-
-                if node == cur_node:
-                    scr.addstr(y, x * 4, node.value.name, curses.A_REVERSE)
-                else:
-                    scr.addstr(y, x * 4, node.value.name)
-                y += 1
-
+            scr.clear()
+            gui.draw(scr)
             scr.refresh()
+
             k = scr.getkey()
             if k == "q":
                 break
             elif k == "j":
-                cursor += 1
+                gui.cursor_next()
             elif k == "k":
-                cursor -= 1
+                gui.cursor_prev()
             elif k == "l":
-                if cur_node.children == []:
-                    cur_node.expand()
-                cursor += 1
+                gui.cursor_down()
             elif k == " ":
-                if cur_node.children == []:
-                    cur_node.expand()
-                else:
-                    cur_node.collapse()
+                gui.cursor_toggle()
             elif k == "h":
-                if cur_node.children == []:
-                    while cursor > 0:
-                        cursor -= 1
-                        n, x = lines[cursor]
-                        if x < cur_node_x:
-                            n.collapse()
-                            break
-                else:
-                    cur_node.collapse()
+                gui.cursor_up()
 
-    curses.wrapper(gui)
+    curses.wrapper(gui_main)
 
 
 if __name__ == "__main__":
