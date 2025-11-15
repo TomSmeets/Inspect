@@ -31,6 +31,9 @@ class Client:
         self.root = store.decode(store_data)
         print(f"Found {len(self.root.children)} CU's with {len(self.root.variables())} variables")
 
+        for var in self.root.variables():
+            print(var.name)
+
         # Calculate base_address
         base_var = self.find_variable(symbol_name)
         self.base_address = addr - base_var.value

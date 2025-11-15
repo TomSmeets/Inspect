@@ -74,9 +74,9 @@ def load(path: str) -> Value:
             return value_cache[die.offset]
 
         # Append a value
-        if die.tag == "DW_TAG_compile_unit":
+        if die.tag == "DW_TAG_compile_unit" or die.tag == "DW_TAG_namespace":
             value = value_new(die, ValueTag.CompileUnit)
-            value.children = visit_children(die, ["DW_TAG_variable"])
+            value.children = visit_children(die, ["DW_TAG_variable", "DW_TAG_namespace", "DW_TAG_compile_unit"])
         elif die.tag == "DW_TAG_variable":
             if "DW_AT_name" not in die.attributes:
                 return None

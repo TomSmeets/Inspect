@@ -9,5 +9,7 @@ python src/patch.py out/test_c
 g++ -g -o out/test_cpp embed/test_cpp.cpp
 python src/patch.py out/test_cpp
 
-rustc -o out/test_rust embed/test_rust.rs
+( cd embed/test_rust; cargo build )
+cp embed/test_rust/target/debug/test_rust out
+# rustc -o out/test_rust embed/test_rust.rs
 python src/patch.py out/test_rust

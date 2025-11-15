@@ -86,13 +86,8 @@ def patch(input: str, target: [str]):
     value = dwarfdb.load(input)
 
     if opt_verbose:
-        for cu in value.children:
-            if cu.children == []:
-                continue
-            print(f"In {cu.name}")
-            for var in cu.children:
-                print(f"  {var.type().pretty():<32} {var.name}")
-            print()
+        for var in value.variables():
+            print(f"{var.name}")
 
     print(f"Deduplicating...")
     deduplicate(value)

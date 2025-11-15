@@ -16,6 +16,10 @@ class RtNode:
             self.name = self.value.pretty()
 
     def expand(self):
+        if self.value.tag == ValueTag.Root:
+            self.children = [RtNode(n) for n in self.value.variables()]
+            return
+
         type = self.value.type()
         if not type:
             self.children = [RtNode(n) for n in self.value.children]

@@ -74,11 +74,11 @@ class Value:
         return None
 
     def variables(self) -> list[Self]:
-        if self.tag == ValueTag.Root:
-            return [v for c in self.children for v in c.variables()]
+        if self.tag == ValueTag.Variable:
+            return [self]
 
-        if self.tag == ValueTag.CompileUnit:
-            return self.children
+        if self.tag in [ValueTag.Root, ValueTag.CompileUnit]:
+            return [v for c in self.children for v in c.variables()]
 
         return []
 
