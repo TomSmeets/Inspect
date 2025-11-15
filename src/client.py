@@ -4,6 +4,7 @@ import struct
 import store
 from value import Value, ValueTag
 
+
 class Client:
     def __init__(self):
         self.sock = None

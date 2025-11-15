@@ -5,6 +5,7 @@ from typing import Self
 from value import Value, ValueTag
 from client import Client
 
+
 class RtNode:
     def __init__(self, value: Value):
         self.value = value
