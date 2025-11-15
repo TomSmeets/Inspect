@@ -15,12 +15,26 @@ static unsigned int DEBUG_DATA[256] = {
     0,                  // used size
 };
 
+typedef struct List List;
+struct List{
+    int value;
+    List *next;
+};
+
 static uint32_t counter = 0;
+static List *items;
 char message[] = "Hello World!";
 
 #define PORT 1234
 
 void *command_thread(void *arg) {
+    for (int i = 0; i < 10; ++i) {
+        List *node = malloc(sizeof(List));
+        node->value = i;
+        node->next = items;
+        items = node;
+    }
+
     // Create TCP socket
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0) {
