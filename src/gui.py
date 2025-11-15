@@ -31,7 +31,7 @@ class RtNode:
                 return
             else:
                 break
-            
+
         self.children = [RtNode(n) for n in self.value.children]
 
     def collapse(self):
@@ -46,6 +46,7 @@ class RtNode:
         for c in self.children:
             lines += c.draw(x + 1)
         return lines
+
 
 class Gui:
 
@@ -133,23 +134,24 @@ class Gui:
         # Draw info
         y = 0
         cur_node = self.cursor_node()
-        for node, x, text in self.lines[self.scroll:]:
+        for node, x, text in self.lines[self.scroll :]:
             if y >= size_y:
                 break
 
-            indent = x*4
+            indent = x * 4
             if indent >= size_x:
-                indent = size_x-1
+                indent = size_x - 1
             text = f"| {text}"
 
             # Limit length
-            text = text[:size_x-indent]
+            text = text[: size_x - indent]
 
             if node == cur_node:
                 scr.addstr(y, indent, text, curses.A_REVERSE)
             else:
                 scr.addstr(y, indent, text)
             y += 1
+
 
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
