@@ -27,7 +27,6 @@ class RtNode:
         return lines
 
 
-
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-c", "--host", default="localhost", help="Router host")
@@ -111,6 +110,7 @@ def main():
                     cur_node.collapse()
 
     curses.wrapper(gui)
+
 
 if __name__ == "__main__":
     main()
