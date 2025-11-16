@@ -2,10 +2,11 @@ from value import Value
 import argparse
 import sys
 import zlib
+import time
 
 import dwarfdb
 import store
-from value import Value, deduplicate
+from value import Value, deduplicate, debug_print
 
 opt_verbose = False
 opt_magic = bytes.fromhex("a1072345f05cae4c")
@@ -90,7 +91,11 @@ def patch(input: str, target: [str]):
             print(f"{var.name}")
 
     print(f"Deduplicating...")
+    t0 = time.time()
     deduplicate(value)
+    t1 = time.time()
+    debug_print(value)
+    print(f"t: {t1-t0:.2f}")
     print(f"Encoding...")
     data = store.encode(value)
     print(f"Compressing...")

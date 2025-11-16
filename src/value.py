@@ -69,6 +69,90 @@ class Value:
         return None
 
 
+def debug_print(root: Value):
+    skip = set()
+
+    def debug(value: Value, parents: set[Value] = []):
+        show_kids = True
+        text = value.name
+        if text == "":
+            text = str(value.tag)
+        if value in parents:
+            text += " (CYCLE)"
+            show_kids = False
+        if value in skip:
+            text += " (REUSED)"
+            show_kids = False
+        else:
+            skip.add(value)
+        print(f"{"    "*len(parents)}{text}")
+        if show_kids:
+            for c in value.children:
+                debug(c, parents + [value])
+
+    debug(root)
+
+
+def values_are_equal(left: Value, right: Value, left_parents: list[Value] = [], right_parents: list[Value] = []) -> bool:
+    if left == right:
+        return True
+
+    if left.tag != right.tag:
+        return False
+
+    if left.name != right.name:
+        return False
+
+    if left.value != right.value:
+        return False
+
+    if len(left.children) != len(right.children):
+        return False
+
+    # There is a cycle
+    if left in left_parents or right in right_parents:
+        left_cycle = left_parents.index(left)
+        right_cycle = right_parents.index(right)
+        return left_cycle == right_cycle
+
+    left_parents = left_parents + [left]
+    right_parents = right_parents + [right]
+    for left_child, right_child in zip(left.children, right.children):
+        if not values_are_equal(left_child, right_child, left_parents, right_parents):
+            return False
+    return True
+
+
+def deduplicate(value: Value):
+    visited: dict[(str, ValueTag), set[Value]] = dict()
+    cache: dict[Value, Value] = dict()
+
+    def visit(value: Value) -> Value:
+        if value in cache:
+            return cache[value]
+
+        key = (value.name, value.tag)
+        if key not in visited:
+            visited[key] = set()
+
+        # Compre deeply
+        for v in visited[key]:
+            if values_are_equal(v, value):
+                cache[value] = v
+                return v
+
+        cache[value] = value
+        visited[key].add(value)
+        value.children = [visit(c) for c in value.children]
+        return value
+
+    value = visit(value)
+    for k, v in visited.items():
+        if len(v) > 1:
+            print(f"{k}: {len(v)}")
+    return value
+
+
 def value_contents(value: Value) -> tuple:
     """
     Attempt to flatten a value recursively to a set of nested tuples.
@@ -111,7 +195,7 @@ def value_contents(value: Value) -> tuple:
     return contents_full(value)
 
 
-def deduplicate(value: Value):
+def deduplicate3(value: Value):
     """
     Deduplicate values in the tree
     """
