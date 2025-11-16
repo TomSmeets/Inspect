@@ -91,11 +91,8 @@ def patch(input: str, target: [str]):
             print(f"{var.name}")
 
     print(f"Deduplicating...")
-    t0 = time.time()
     deduplicate(value)
-    t1 = time.time()
     debug_print(value)
-    print(f"t: {t1-t0:.2f}")
     print(f"Encoding...")
     data = store.encode(value)
     print(f"Compressing...")

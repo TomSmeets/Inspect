@@ -74,7 +74,7 @@ def debug_print(root: Value):
 
     def debug(value: Value, parents: set[Value] = []):
         show_kids = True
-        text = value.name
+        text = f"{str(value.tag).split('.')[-1]}({value.name!r},{value.value!r})"
         if text == "":
             text = str(value.tag)
         if value in parents:
