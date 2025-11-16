@@ -25,9 +25,9 @@ static mut APP: *mut App = null_mut();
 
 fn main() {
     let mut app = App {
-        counter : 1,
-        data1 : "Hello World!",
-        data2 : "Hello World!".into(),
+        counter: 1,
+        data1: "Hello World!",
+        data2: "Hello World!".into(),
     };
     unsafe {
         APP = &mut app;
@@ -60,7 +60,9 @@ fn main() {
                     let size = u64::from_le_bytes(args[8..16].try_into().unwrap());
                     println!("addr={:#x} size={}", addr, size);
                     unsafe {
-                        stream.write_all(from_raw_parts(addr as *const u8, size as usize)).unwrap();
+                        stream
+                            .write_all(from_raw_parts(addr as *const u8, size as usize))
+                            .unwrap();
                     }
                 }
                 2 => {}

@@ -68,6 +68,7 @@ class Value:
             return self.name
         return None
 
+
 def value_contents(value: Value) -> tuple:
     """
     Attempt to flatten a value recursively to a set of nested tuples.

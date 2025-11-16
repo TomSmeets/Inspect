@@ -72,7 +72,7 @@ def load(path: str) -> Value:
         elif die.tag == "DW_TAG_variable":
             name = die_name(die)
             # Skip unnamed variables and vtables
-            if name == "" or  "{vtable}" in name:
+            if name == "" or "{vtable}" in name:
                 return []
             addr = die_to_addr(die)
             if not addr:
@@ -140,8 +140,8 @@ def load(path: str) -> Value:
         root.children += visit(cu_die)
     elf.close()
 
-
     skip = set()
+
     def debug(value: Value, parents: set[Value] = []):
         if value in parents:
             print(f"{"    "*len(parents)}(CYCLE)")
