@@ -2,7 +2,7 @@ from io import BytesIO
 from value import Value, ValueTag
 
 
-def encode(root: Value, stripe: bool = True) -> bytes:
+def encode(root: Value) -> bytes:
     # value, children, pairs
     values: list[(Value, list[int])] = []
 

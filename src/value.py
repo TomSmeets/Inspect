@@ -110,10 +110,14 @@ def values_are_equal(left: Value, right: Value, left_parents: list[Value] = [], 
         return False
 
     # There is a cycle
-    if left in left_parents or right in right_parents:
-        left_cycle = left_parents.index(left)
-        right_cycle = right_parents.index(right)
-        return left_cycle == right_cycle
+    left_cycle = left in left_parents
+    right_cycle = right in right_parents
+    if left_cycle and right_cycle:
+        return left_parents.index(left) == right_parents.index(right)
+
+    # Non matching cycles
+    if left_cycle or right_cycle:
+        return False
 
     left_parents = left_parents + [left]
     right_parents = right_parents + [right]
@@ -146,11 +150,7 @@ def deduplicate(value: Value):
         value.children = [visit(c) for c in value.children]
         return value
 
-    value = visit(value)
-    for k, v in visited.items():
-        if len(v) > 1:
-            print(f"{k}: {len(v)}")
-    return value
+    return visit(value)
 
 
 def value_contents(value: Value) -> tuple:
