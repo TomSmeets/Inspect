@@ -48,7 +48,7 @@ class RtNode:
                     elif array_type.tag == ValueTag.Pointer:
                         size = 8
                         break
-                self.children = [RtNode(type.type(), addr + i*size, f"[{i:2}]") for i in range(0, type.value)]
+                self.children = [RtNode(type.type(), addr + i * size, f"[{i:2}]") for i in range(0, type.value)]
                 break
             elif type.tag == ValueTag.Struct:
                 self.children = [RtNode(n, addr + n.value) for n in type.children]
@@ -91,12 +91,11 @@ class RtNode:
             elif type.tag == ValueTag.BaseType:
                 size = type.value
                 data = client.read_int(addr, size)
-                if type.name == 'char':
+                if type.name == "char":
                     return f"{str(data)} ({repr(chr(data))})"
                 return str(data)
             else:
                 return ""
-        
 
     def collapse(self):
         self.children = []
@@ -121,7 +120,7 @@ class Gui:
         self.client = client
 
         # Tree of expanded nodes
-        self.node = RtNode(client.root, addr = client.base_address)
+        self.node = RtNode(client.root, addr=client.base_address)
         self.node.expand(client)
 
         # Current highlighed line
@@ -212,7 +211,7 @@ class Gui:
 
             value = node.read_value(self.client)
             if value:
-                text = text +" = "  + value
+                text = text + " = " + value
 
             # Limit length
             text = text[: size_x - indent]
