@@ -143,13 +143,22 @@ def load(path: str) -> Value:
     skip = set()
 
     def debug(value: Value, parents: set[Value] = []):
+        show_kids = True
+        text = value.name
+        if text == "":
+            text = str(value.tag)
         if value in parents:
-            print(f"{"    "*len(parents)}(CYCLE)")
-            return
-        skip.add(value)
-        print(f"{"    "*len(parents)}{value.tag}    {value.name}")
-        for c in value.children:
-            debug(c, parents + [value])
+            text += " (CYCLE)"
+            show_kids = False
+        if value in skip:
+            text += " (REUSED)"
+            show_kids = False
+        else:
+            skip.add(value)
+        print(f"{"    "*len(parents)}{text}")
+        if show_kids:
+            for c in value.children:
+                debug(c, parents + [value])
 
     debug(root)
     return root
