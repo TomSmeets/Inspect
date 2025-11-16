@@ -1,6 +1,7 @@
 use std::io::Read;
 use std::io::Write;
 use std::net::TcpListener;
+use std::ptr::null_mut;
 use std::slice::from_raw_parts;
 
 const DEBUG_DATA_SIZE: u32 = 64 * 1024 / 4;
@@ -16,17 +17,20 @@ pub static DEBUG_DATA: [u32; DEBUG_DATA_SIZE as usize] = {
 
 struct App {
     counter: u32,
-    data: String,
+    data1: &'static str,
+    data2: String,
 }
 
-static mut APP: Option<App> = None;
+static mut APP: *mut App = null_mut();
 
 fn main() {
-    unsafe {
-    APP = Some(App {
+    let mut app = App {
         counter : 1,
-        data : "Hello World!".into(),
-    })
+        data1 : "Hello World!",
+        data2 : "Hello World!".into(),
+    };
+    unsafe {
+        APP = &mut app;
     }
     println!("Hello World!");
     let listener = TcpListener::bind("127.0.0.1:1234").unwrap();
@@ -37,7 +41,9 @@ fn main() {
 
         loop {
             let mut command = [0];
-            stream.read_exact(&mut command).unwrap();
+            if stream.read_exact(&mut command).is_err() {
+                break;
+            }
             println!("command: {}", command[0]);
             match command[0] {
                 0 => {

@@ -17,26 +17,33 @@ class RtNode:
 
     def expand(self):
         if self.value.tag == ValueTag.Root:
-            self.children = [RtNode(n) for n in self.value.variables()]
-            return
-
-        type = self.value.type()
-        if not type:
             self.children = [RtNode(n) for n in self.value.children]
             return
 
+        type = self.value.type()
         while True:
-            if type.tag == ValueTag.Variable:
+            if type == None:
+                break
+            elif type.tag == ValueTag.Variable:
                 type = type.type()
             elif type.tag == ValueTag.Typedef:
                 type = type.type()
+            elif type.tag == ValueTag.Pointer:
+                type = type.type()
             elif type.tag == ValueTag.Array:
                 self.children = [RtNode(type.type(), f"[{i:2}]") for i in range(0, type.value)]
-                return
+                break
+            elif type.tag == ValueTag.Struct:
+                self.children = [RtNode(n) for n in type.children]
+                break
+            elif type.tag == ValueTag.BaseType:
+                break
+            elif type.tag == ValueTag.Enum:
+                break
+            elif type.tag == ValueTag.EnumValue:
+                break
             else:
                 break
-
-        self.children = [RtNode(n) for n in self.value.children]
 
     def collapse(self):
         self.children = []

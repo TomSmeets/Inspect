@@ -7,8 +7,8 @@ from value import Value, ValueTag
 
 class Client:
     def __init__(self):
-        self.sock = None
-        self.root = None
+        self.sock: socket.socket = None
+        self.root: Value = None
         self.base_address = 0
 
     def connect(self, host: str, port: int, symbol_name: str = "DEBUG_DATA"):
@@ -29,10 +29,9 @@ class Client:
         store_data = self.read(addr + 16, data_size)
         store_data = zlib.decompress(store_data)
         self.root = store.decode(store_data)
-        print(f"Found {len(self.root.children)} CU's with {len(self.root.variables())} variables")
-
-        for var in self.root.variables():
-            print(var.name)
+        print(f"Found {len(self.root.children)} variables")
+        for var in self.root.children:
+            print(f"    {var.pretty()}")
 
         # Calculate base_address
         base_var = self.find_variable(symbol_name)
@@ -67,7 +66,7 @@ class Client:
         self.write(addr, data.to_bytes(len, "little"))
 
     def find_variable(self, name: str) -> Value:
-        for var in self.root.variables():
+        for var in self.root.children:
             if var.name == name:
                 return var
         return None

@@ -4,15 +4,14 @@ from typing import Self
 
 class ValueTag(Enum):
     Root = 0
-    CompileUnit = 1
-    Variable = 2
-    BaseType = 3
-    Pointer = 4
-    Array = 5
-    Struct = 6
-    Enum = 7
-    EnumValue = 8
-    Typedef = 9
+    Variable = 1
+    BaseType = 2
+    Pointer = 3
+    Array = 4
+    Struct = 5
+    Enum = 6
+    EnumValue = 7
+    Typedef = 8
 
 
 class Value:
@@ -51,10 +50,6 @@ class Value:
         return self
 
     def pretty(self) -> str:
-        if self.tag == ValueTag.Root:
-            return f"Root {self.name}"
-        if self.tag == ValueTag.CompileUnit:
-            return f"CompileUnit {self.name}"
         if self.tag == ValueTag.Variable:
             return f"{self.type().pretty()} {self.name}"
         if self.tag == ValueTag.BaseType:
@@ -72,22 +67,6 @@ class Value:
         if self.tag == ValueTag.Typedef:
             return self.name
         return None
-
-    def variables(self) -> list[Self]:
-        if self.tag == ValueTag.Variable:
-            return [self]
-
-        if self.tag in [ValueTag.Root, ValueTag.CompileUnit]:
-            return [v for c in self.children for v in c.variables()]
-
-        return []
-
-    def find_variable(self, name: str) -> Self:
-        for v in self.variables():
-            if v.name == name:
-                return v
-        return None
-
 
 def value_contents(value: Value) -> tuple:
     """
