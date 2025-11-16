@@ -94,6 +94,7 @@ def debug_print(root: Value):
 
 
 def values_are_equal(left: Value, right: Value, left_parents: list[Value] = [], right_parents: list[Value] = []) -> bool:
+    """Compare if two values match exactly by deep comparison"""
     if left == right:
         return True
 
@@ -128,25 +129,26 @@ def values_are_equal(left: Value, right: Value, left_parents: list[Value] = [], 
 
 
 def deduplicate(value: Value):
-    visited: dict[(str, ValueTag), set[Value]] = dict()
+    """Deduplicate equal values in the tree"""
+
+    visited: dict[(ValueTag, str, int, int), set[Value]] = dict()
     cache: dict[Value, Value] = dict()
 
     def visit(value: Value) -> Value:
         if value in cache:
             return cache[value]
 
-        key = (value.name, value.tag)
-        if key not in visited:
-            visited[key] = set()
+        key = (value.tag, value.name, value.value, len(value.children))
+        vis = visited.setdefault(key, set())
 
         # Compre deeply
-        for v in visited[key]:
+        for v in vis:
             if values_are_equal(v, value):
                 cache[value] = v
                 return v
 
         cache[value] = value
-        visited[key].add(value)
+        vis.add(value)
         value.children = [visit(c) for c in value.children]
         return value
 
