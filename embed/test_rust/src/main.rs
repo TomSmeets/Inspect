@@ -25,13 +25,18 @@ static mut APP: *mut App = null_mut();
 
 fn main() {
     let mut app = App {
-        counter: 1,
+        counter: 1337,
         data1: "Hello World!",
         data2: "Hello World!".into(),
     };
     unsafe {
         APP = &mut app;
+        println!("&APP         = {:p}", &raw const APP);
     }
+    println!("&app         = {:p}", &app);
+    println!("&app.counter = {:p}", &app.counter);
+    println!("&app.data1   = {:p}", &app.data1);
+    println!("&app.data2   = {:p}", &app.data2);
     println!("Hello World!");
     let listener = TcpListener::bind("127.0.0.1:1234").unwrap();
 
@@ -45,6 +50,7 @@ fn main() {
                 break;
             }
             println!("command: {}", command[0]);
+            app.counter += 1;
             match command[0] {
                 0 => {
                     let addr = &DEBUG_DATA[0] as *const u32 as u64;

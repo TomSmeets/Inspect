@@ -7,20 +7,22 @@ from client import Client
 
 
 class RtNode:
-    def __init__(self, value: Value, name: str = None):
+    def __init__(self, value: Value, addr: int, name: str = None):
         self.name = name
         self.value = value
         self.children = []
+        self.addr = addr
 
         if not self.name:
             self.name = self.value.pretty()
 
-    def expand(self):
+    def expand(self, client: Client):
         if self.value.tag == ValueTag.Root:
-            self.children = [RtNode(n) for n in self.value.children]
+            self.children = [RtNode(n, self.addr + n.value) for n in self.value.children]
             return
 
-        type = self.value.type()
+        type: Value = self.value.type()
+        addr = self.addr
         while True:
             if type == None:
                 break
@@ -29,12 +31,27 @@ class RtNode:
             elif type.tag == ValueTag.Typedef:
                 type = type.type()
             elif type.tag == ValueTag.Pointer:
+                size = 8
+                addr = client.read_int(addr, size)
                 type = type.type()
+                if addr == 0:
+                    break
             elif type.tag == ValueTag.Array:
-                self.children = [RtNode(type.type(), f"[{i:2}]") for i in range(0, type.value)]
+                array_type: Value = type.type()
+                size: int = 0
+                while True:
+                    if array_type.tag == ValueTag.Typedef:
+                        array_type = array_type.type()
+                    elif array_type.tag == ValueTag.BaseType:
+                        size = array_type.value
+                        break
+                    elif array_type.tag == ValueTag.Pointer:
+                        size = 8
+                        break
+                self.children = [RtNode(type.type(), addr + i*size, f"[{i:2}]") for i in range(0, type.value)]
                 break
             elif type.tag == ValueTag.Struct:
-                self.children = [RtNode(n) for n in type.children]
+                self.children = [RtNode(n, addr + n.value) for n in type.children]
                 break
             elif type.tag == ValueTag.BaseType:
                 break
@@ -45,17 +62,56 @@ class RtNode:
             else:
                 break
 
+    def read_value(self, client: Client) -> str:
+        type: Value = self.value
+        addr: int = self.addr
+
+        enum_variants = []
+        extra = ""
+        while True:
+            if type == None:
+                return None
+            elif type.tag == ValueTag.Variable:
+                type = type.type()
+            elif type.tag == ValueTag.Typedef:
+                type = type.type()
+            elif type.tag == ValueTag.Pointer:
+                size = 8
+                addr = client.read_int(addr, size)
+                type = type.type()
+                extra = f"0x{addr:x}"
+                if addr == 0:
+                    return extra
+            elif type.tag == ValueTag.Enum:
+                type = type.type()
+            elif type.tag == ValueTag.Struct:
+                return extra + "{}"
+            elif type.tag == ValueTag.Array:
+                return extra + "[]"
+            elif type.tag == ValueTag.BaseType:
+                size = type.value
+                data = client.read_int(addr, size)
+                if type.name == 'char':
+                    return f"{str(data)} ({repr(chr(data))})"
+                return str(data)
+            else:
+                return ""
+        
+
     def collapse(self):
         self.children = []
 
     def pretty(self) -> str:
         return self.value.pretty()
 
-    def draw(self, x: int = 0) -> list[(Self, int)]:
-        name = f"{self.name}"
+    def draw(self, client: Client, x: int = 0) -> list[(Self, int)]:
+        name = f"0x{self.addr:016x} {self.name}"
+        # value = self.read_value(client)
+        # if value:
+        #     name = f"{name} = {value}"
         lines = [(self, x, name)]
         for c in self.children:
-            lines += c.draw(x + 1)
+            lines += c.draw(client, x + 1)
         return lines
 
 
@@ -65,8 +121,8 @@ class Gui:
         self.client = client
 
         # Tree of expanded nodes
-        self.node = RtNode(client.root)
-        self.node.expand()
+        self.node = RtNode(client.root, addr = client.base_address)
+        self.node.expand(client)
 
         # Current highlighed line
         self.cursor = 0
@@ -78,7 +134,7 @@ class Gui:
         self.lines: list[(RtNode, int, str)] = []
 
     def update(self):
-        self.lines = [l for c in self.node.children for l in c.draw()]
+        self.lines = [l for c in self.node.children for l in c.draw(self.client)]
         self.cursor_update()
 
     def cursor_update(self):
@@ -111,7 +167,7 @@ class Gui:
 
     def cursor_down(self):
         if self.cursor_node().children == []:
-            self.cursor_node().expand()
+            self.cursor_node().expand(self.client)
         if self.cursor_node().children != []:
             self.cursor_next()
 
@@ -125,7 +181,7 @@ class Gui:
 
     def cursor_toggle(self):
         if self.cursor_node().children == []:
-            self.cursor_node().expand()
+            self.cursor_node().expand(self.client)
         else:
             self.cursor_node().collapse()
 
@@ -153,6 +209,10 @@ class Gui:
             if indent >= size_x:
                 indent = size_x - 1
             text = f"| {text}"
+
+            value = node.read_value(self.client)
+            if value:
+                text = text +" = "  + value
 
             # Limit length
             text = text[: size_x - indent]
