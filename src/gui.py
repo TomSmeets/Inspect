@@ -237,6 +237,7 @@ def main():
 
     def gui_main(scr):
         curses.curs_set(0)
+        curses.halfdelay(10)
         while True:
             gui.update()
 
@@ -245,7 +246,11 @@ def main():
             gui.draw(scr)
             scr.refresh()
 
-            k = scr.getkey()
+            try:
+                k = scr.getkey()
+            except:
+                k = None
+
             if k == "q":
                 break
             elif k == "j":
