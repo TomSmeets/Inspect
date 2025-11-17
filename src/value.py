@@ -68,169 +68,91 @@ class Value:
             return self.name
         return None
 
+    def debug_print(self):
+        skip = set()
 
-def debug_print(root: Value):
-    skip = set()
+        def debug(value: Value, parents: set[Value]):
+            show_kids = True
+            text = f"{str(value.tag).split('.')[-1]}({value.name!r},{value.value!r})"
+            if text == "":
+                text = str(value.tag)
+            if value in parents:
+                text += " (CYCLE)"
+                show_kids = False
+            if value in skip:
+                text += " (REUSED)"
+                show_kids = False
+            else:
+                skip.add(value)
+            print(f"{"    "*len(parents)}{text}")
+            if show_kids:
+                for c in value.children:
+                    debug(c, parents + [value])
 
-    def debug(value: Value, parents: set[Value] = []):
-        show_kids = True
-        text = f"{str(value.tag).split('.')[-1]}({value.name!r},{value.value!r})"
-        if text == "":
-            text = str(value.tag)
-        if value in parents:
-            text += " (CYCLE)"
-            show_kids = False
-        if value in skip:
-            text += " (REUSED)"
-            show_kids = False
-        else:
-            skip.add(value)
-        print(f"{"    "*len(parents)}{text}")
-        if show_kids:
-            for c in value.children:
-                debug(c, parents + [value])
+        debug(self, [])
 
-    debug(root)
+    def equals_deep(self, other: Self) -> bool:
+        def values_are_equal(left: Self, right: Value, left_parents: list[Value], right_parents: list[Value]) -> bool:
+            """Compare if two values match exactly by deep comparison"""
+            if left == right:
+                return True
 
+            if left.tag != right.tag:
+                return False
 
-def values_are_equal(left: Value, right: Value, left_parents: list[Value] = [], right_parents: list[Value] = []) -> bool:
-    """Compare if two values match exactly by deep comparison"""
-    if left == right:
-        return True
+            if left.name != right.name:
+                return False
 
-    if left.tag != right.tag:
-        return False
+            if left.value != right.value:
+                return False
 
-    if left.name != right.name:
-        return False
+            if len(left.children) != len(right.children):
+                return False
 
-    if left.value != right.value:
-        return False
+            # There is a cycle
+            left_cycle = left in left_parents
+            right_cycle = right in right_parents
+            if left_cycle and right_cycle:
+                return left_parents.index(left) == right_parents.index(right)
 
-    if len(left.children) != len(right.children):
-        return False
+            # Non matching cycles
+            if left_cycle or right_cycle:
+                return False
 
-    # There is a cycle
-    left_cycle = left in left_parents
-    right_cycle = right in right_parents
-    if left_cycle and right_cycle:
-        return left_parents.index(left) == right_parents.index(right)
+            left_parents = left_parents + [left]
+            right_parents = right_parents + [right]
+            for left_child, right_child in zip(left.children, right.children):
+                if not values_are_equal(left_child, right_child, left_parents, right_parents):
+                    return False
+            return True
 
-    # Non matching cycles
-    if left_cycle or right_cycle:
-        return False
+        return values_are_equal(self, other, [], [])
 
-    left_parents = left_parents + [left]
-    right_parents = right_parents + [right]
-    for left_child, right_child in zip(left.children, right.children):
-        if not values_are_equal(left_child, right_child, left_parents, right_parents):
-            return False
-    return True
+    def deduplicate(self):
+        """Deduplicate equal values in the tree"""
 
+        visited: dict[(ValueTag, str, int, int), set[Value]] = dict()
+        cache: dict[Value, Value] = dict()
 
-def deduplicate(value: Value):
-    """Deduplicate equal values in the tree"""
+        def visit(value: Value) -> Value:
+            if value in cache:
+                return cache[value]
 
-    visited: dict[(ValueTag, str, int, int), set[Value]] = dict()
-    cache: dict[Value, Value] = dict()
+            key = (value.tag, value.name, value.value, len(value.children))
+            vis = visited.setdefault(key, set())
 
-    def visit(value: Value) -> Value:
-        if value in cache:
-            return cache[value]
+            # Compre deeply
+            for v in vis:
+                if v.equals_deep(value):
+                    cache[value] = v
+                    return v
 
-        key = (value.tag, value.name, value.value, len(value.children))
-        vis = visited.setdefault(key, set())
-
-        # Compre deeply
-        for v in vis:
-            if values_are_equal(v, value):
-                cache[value] = v
-                return v
-
-        cache[value] = value
-        vis.add(value)
-        value.children = [visit(c) for c in value.children]
-        return value
-
-    return visit(value)
-
-
-def value_contents(value: Value) -> tuple:
-    """
-    Attempt to flatten a value recursively to a set of nested tuples.
-    Will return None when the value contains a cycle
-    """
-    # print(f"=== value_contents {value.tag} {value.name} ===")
-    visited: set[Value] = set()
-    completed: dict[Value, tuple] = {}
-
-    def contents_simple(val: Value) -> tuple:
-        return (val.tag, val.name, val.value, len(val.children))
-
-    def contents_full(val: Value) -> tuple:
-        # print(f"  {val.tag} {val.name}")
-        if val in completed:
-            # print("* Cached *")
-            return completed[val]
-
-        # Cycle detected, not possible
-        if val in visited:
-            # print("== Cycle ==")
-            return None
-
-        visited.add(val)
-
-        children = []
-        for c in val.children:
-            child_cont = contents_full(c)
-
-            # Cycle detected, skip this
-            if child_cont is None:
-                return None
-
-            children.append(child_cont)
-
-        cont = (contents_simple(val), tuple(children))
-        completed[val] = cont
-        return cont
-
-    return contents_full(value)
-
-
-def deduplicate3(value: Value):
-    """
-    Deduplicate values in the tree
-    """
-    # Full tree to value mapping
-    dedup_table: dict[tuple, Value] = dict()
-    value_table: dict[Value, Value] = dict()
-
-    def dedup_one(value: Value):
-        # Check if the value was already deduplicated
-        if value in value_table:
-            return value_table[value]
-
-        # Compute value flattend content for equality checks
-        cont = value_contents(value)
-
-        if cont is None:
-            # Value contains a cycle, so don't deduplicate (too hard)
-            value_table[value] = value
-        elif cont in dedup_table:
-            # A duplicate exists, replace the value
-            old_value = value
-            value = dedup_table[cont]
-            value_table[old_value] = value
+            cache[value] = value
+            vis.add(value)
+            value.children = [visit(c) for c in value.children]
             return value
-        else:
-            # no duplicate exists yet
-            value_table[value] = value
-            dedup_table[cont] = value
 
-        value.children = [dedup_one(c) for c in value.children]
-        return value
-
-    dedup_one(value)
+        visit(self)
 
 
 def test_dedup0():
