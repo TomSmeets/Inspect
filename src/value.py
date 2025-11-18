@@ -157,19 +157,19 @@ class Value:
 
 def test_dedup0():
     value = Value(ValueTag.Root, "root")
-    deduplicate(value)
+    value.deduplicate()
     assert value.name == "root"
     assert value.children == []
 
 
 def test_dedup_do_nothing():
     value = Value(ValueTag.Root, "root")
-    cu0 = Value(ValueTag.CompileUnit, "CU0")
-    cu1 = Value(ValueTag.CompileUnit, "CU1")
+    cu0 = Value(ValueTag.Variable, "CU0")
+    cu1 = Value(ValueTag.Variable, "CU1")
 
     # Distinct
     value.children = [cu0, cu1]
-    deduplicate(value)
+    value.deduplicate()
     assert value.children == [cu0, cu1]
     assert cu0.children == []
     assert cu1.children == []
@@ -178,23 +178,23 @@ def test_dedup_do_nothing():
 
 def test_dedup1():
     value = Value(ValueTag.Root, "root")
-    cu0 = Value(ValueTag.CompileUnit, "CU0")
-    cu1 = Value(ValueTag.CompileUnit, "CU1")
-    cu2 = Value(ValueTag.CompileUnit, "CU0")
-    cu3 = Value(ValueTag.CompileUnit, "CU1")
-    cu4 = Value(ValueTag.CompileUnit, "CU4")
-    cu5 = Value(ValueTag.CompileUnit, "CU0")
+    cu0 = Value(ValueTag.Variable, "CU0")
+    cu1 = Value(ValueTag.Variable, "CU1")
+    cu2 = Value(ValueTag.Variable, "CU0")
+    cu3 = Value(ValueTag.Variable, "CU1")
+    cu4 = Value(ValueTag.Variable, "CU4")
+    cu5 = Value(ValueTag.Variable, "CU0")
 
     value.children = [cu0, cu1, cu2, cu3, cu4, cu5]
-    deduplicate(value)
+    value.deduplicate()
     assert value.children == [cu0, cu1, cu0, cu1, cu4, cu0]
 
 
 def test_dedup2():
     value = Value(ValueTag.Root, "root")
-    cu0 = Value(ValueTag.CompileUnit, "CU0")
-    cu1 = Value(ValueTag.CompileUnit, "CU1")
-    cu2 = Value(ValueTag.CompileUnit, "CU0")
+    cu0 = Value(ValueTag.Variable, "CU0")
+    cu1 = Value(ValueTag.Variable, "CU1")
+    cu2 = Value(ValueTag.Variable, "CU0")
 
     var1 = Value(ValueTag.BaseType, "int1", 1)
     var2 = Value(ValueTag.BaseType, "int2", 2)
@@ -205,15 +205,15 @@ def test_dedup2():
     cu1.children = [var1, var2, var3, var4]
     cu2.children = [var1, var2, var3, var4]
     value.children = [cu0, cu1, cu2]
-    deduplicate(value)
+    value.deduplicate()
     assert value.children == [cu0, cu1, cu0]
 
 
 def test_dedup3():
     value = Value(ValueTag.Root, "root")
-    cu0 = Value(ValueTag.CompileUnit, "CU0")
-    cu1 = Value(ValueTag.CompileUnit, "CU0")
-    cu2 = Value(ValueTag.CompileUnit, "CU0")
+    cu0 = Value(ValueTag.Variable, "CU0")
+    cu1 = Value(ValueTag.Variable, "CU0")
+    cu2 = Value(ValueTag.Variable, "CU0")
 
     var1 = Value(ValueTag.BaseType, "int1", 1)
     var2 = Value(ValueTag.BaseType, "int1", 2)
@@ -224,16 +224,16 @@ def test_dedup3():
     cu1.children = [var1, var2, var3, var4]
     cu2.children = [var1, var2, var3, var4]
     value.children = [cu0, cu1, cu2]
-    deduplicate(value)
+    value.deduplicate()
     assert value.children == [cu0, cu0, cu0]
     assert cu0.children == [var1, var2, var3, var4]
 
 
 def test_dedup4():
     value = Value(ValueTag.Root, "root")
-    cu0 = Value(ValueTag.CompileUnit, "CU0")
-    cu1 = Value(ValueTag.CompileUnit, "CU0")
-    cu2 = Value(ValueTag.CompileUnit, "CU0")
+    cu0 = Value(ValueTag.Variable, "CU0")
+    cu1 = Value(ValueTag.Variable, "CU0")
+    cu2 = Value(ValueTag.Variable, "CU0")
 
     var1 = Value(ValueTag.BaseType, "int1", 1)
     var2 = Value(ValueTag.BaseType, "int1", 1)
@@ -244,16 +244,16 @@ def test_dedup4():
     cu1.children = [var1, var2, var3, var4]
     cu2.children = [var1, var2, var3, var4]
     value.children = [cu0, cu1, cu2]
-    deduplicate(value)
+    value.deduplicate()
     assert value.children == [cu0, cu0, cu0]
     assert cu0.children == [var1, var1, var1, var1]
 
 
 def test_dedup5():
     root = Value(ValueTag.Root, "Root")
-    cu0 = Value(ValueTag.CompileUnit, "CU0")
-    cu1 = Value(ValueTag.CompileUnit, "CU1")
-    cu2 = Value(ValueTag.CompileUnit, "CU1")
+    cu0 = Value(ValueTag.Variable, "CU0")
+    cu1 = Value(ValueTag.Variable, "CU1")
+    cu2 = Value(ValueTag.Variable, "CU1")
     root.children = [cu0, cu1, cu2]
 
     type_int = Value(ValueTag.BaseType, "int", 4)
@@ -281,7 +281,7 @@ def test_dedup5():
     cu1.children = [var_x1, var_y1, var_x2, var_y2]
     cu2.children = [var_x0, var_y0, var_x2, var_y2]
 
-    deduplicate(root)
+    root.deduplicate()
     assert root.children == [cu0, cu1, cu1]
     assert cu0.children == [var_x0, var_y0, var_x0, var_y2]
     assert cu1.children == [var_x0, var_y0, var_x0, var_y2]
