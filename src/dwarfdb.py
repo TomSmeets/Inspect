@@ -35,6 +35,9 @@ def load(path: str) -> Value:
         if len(expr) == 1 and expr[0].op_name == "DW_OP_addr":
             return expr[0].args[0]
 
+        if len(expr) == 1 and expr[0].op_name == "DW_OP_addrx":
+            return dwarf.get_addr(die.cu, expr[0].args[0])
+
         print("Unknown address expression:", expr)
         return None
 
