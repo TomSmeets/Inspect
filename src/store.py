@@ -74,10 +74,6 @@ def read_u8(buf: BytesIO) -> int:
     return int.from_bytes(buf.read(1), "little")
 
 
-def write_u32(buf: BytesIO, value: int):
-    buf.write(value.to_bytes(4, "little"))
-
-
 def write_varint(buf: BytesIO, value: int):
     while True:
         byte = value & 0x7F
@@ -87,18 +83,6 @@ def write_varint(buf: BytesIO, value: int):
         else:
             write_u8(buf, byte)
             break
-
-
-def read_u32(buf: BytesIO) -> int:
-    return int.from_bytes(buf.read(4), "little")
-
-
-def write_u64(buf: BytesIO, value: int):
-    buf.write(value.to_bytes(8, "little"))
-
-
-def read_u64(buf: BytesIO) -> int:
-    return int.from_bytes(buf.read(8), "little")
 
 
 def read_varint(buf: BytesIO) -> int:
@@ -111,13 +95,3 @@ def read_varint(buf: BytesIO) -> int:
         if not (byte & 0x80):
             break
     return value
-
-
-def write_str(buf: BytesIO, value: str):
-    write_u32(buf, len(value))
-    buf.write(value.encode())
-
-
-def read_str(buf: BytesIO) -> str:
-    len = read_u32(buf)
-    return buf.read(len).decode()
