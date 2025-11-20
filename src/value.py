@@ -50,6 +50,8 @@ class Value:
         return self
 
     def pretty(self) -> str:
+        if self.tag == ValueTag.Namespace:
+            return f"{self.name}"
         if self.tag == ValueTag.Variable:
             return f"{self.type().pretty()} {self.name}"
         if self.tag == ValueTag.BaseType:

@@ -16,7 +16,7 @@ static unsigned int DEBUG_DATA[1024] = {
 };
 
 void *inspect_command_thread(void *arg) {
-    int port = *(int*)arg;
+    int port = (int)(intptr_t)arg;
 
     // Create TCP socket
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -92,5 +92,5 @@ void *inspect_command_thread(void *arg) {
 static pthread_t command_thread_handle;
 
 void inspect_start(int port) {
-    pthread_create(&command_thread_handle, 0, inspect_command_thread, &port);
+    pthread_create(&command_thread_handle, 0, inspect_command_thread, (void *) (intptr_t) port);
 }
