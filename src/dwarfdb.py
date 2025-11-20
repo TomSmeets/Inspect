@@ -101,6 +101,8 @@ def load(path: str) -> Value:
         elif die.tag == "DW_TAG_pointer_type":
             value = value_new(die, ValueTag.Pointer)
             value.children = visit_typeof(die)
+            # TODO: use native platform size
+            value.value = 8
             return [value]
         elif die.tag == "DW_TAG_array_type":
             value = value_new(die, ValueTag.Array)
