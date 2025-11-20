@@ -91,6 +91,7 @@ def patch(input: str, target: [str]):
             print(f"{var.name}")
 
     print(f"Deduplicating...")
+    value.join_namespaces()
     value.deduplicate()
     value.sort()
     value.debug_print()

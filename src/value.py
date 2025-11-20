@@ -1,8 +1,8 @@
-from enum import Enum
+from enum import IntEnum
 from typing import Self
 
 
-class ValueTag(Enum):
+class ValueTag(IntEnum):
     Namespace = 0
     Variable = 1
     BaseType = 2
@@ -186,6 +186,28 @@ class Value:
 
         for c in self.children:
             c.sort(parents + [self])
+
+    def join_namespaces(self):
+        if self.tag != ValueTag.Namespace:
+            return
+
+        visited: dict[str, Value] = dict()
+        children: list[Value] = []
+        for c in self.children:
+            if c.tag != ValueTag.Namespace:
+                children.append(c)
+                continue
+
+            if c.name in visited:
+                visited[c.name].children += c.children
+            else:
+                visited[c.name] = c
+                children.append(c)
+
+        self.children = children
+
+        for c in self.children:
+            c.join_namespaces()
 
 
 def test_dedup0():
