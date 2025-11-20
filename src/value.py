@@ -12,6 +12,7 @@ class ValueTag(Enum):
     Enum = 6
     EnumValue = 7
     Typedef = 8
+    Namespace = 9
 
 
 class Value:
