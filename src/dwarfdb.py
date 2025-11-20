@@ -72,7 +72,7 @@ def load(path: str) -> Value:
         # Append a value
         if die.tag == "DW_TAG_compile_unit" or die.tag == "DW_TAG_namespace":
             value = value_new(die, ValueTag.Namespace)
-            value.name = value.name.split('/@/', 1)[0]
+            value.name = value.name.split("/@/", 1)[0]
             value.children = visit_children(die, ["DW_TAG_variable", "DW_TAG_namespace", "DW_TAG_compile_unit"])
             if value.children == []:
                 return []

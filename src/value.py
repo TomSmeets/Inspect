@@ -182,10 +182,10 @@ class Value:
         if self in parents:
             return
 
-        self.children.sort(key = lambda k: (k.tag, k.name, k.value))
+        self.children.sort(key=lambda k: (k.tag, k.name, k.value))
 
         for c in self.children:
-            c.sort(parents + [ self ]);
+            c.sort(parents + [self])
 
 
 def test_dedup0():
