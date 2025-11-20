@@ -2,8 +2,10 @@
 set -euo pipefail
 mkdir -p out
 
+
 set -x
-gcc -g -o out/test_c embed/test_c.c
+gcc -c -g -o out/inspect.o embed/inspect.c
+gcc -g -o out/test_c embed/test_c.c out/inspect.o
 python src/patch.py out/test_c
 
 g++ -g -o out/test_cpp embed/test_cpp.cpp
