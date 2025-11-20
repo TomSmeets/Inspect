@@ -85,16 +85,23 @@ class RtNode:
                     elif array_type.tag == ValueTag.BaseType:
                         size = array_type.value
                         break
+                    elif array_type.tag == ValueTag.Struct:
+                        size = array_type.value
+                        break
+                    elif array_type.tag == ValueTag.Enum:
+                        size = array_type.value
+                        break
                     elif array_type.tag == ValueTag.Pointer:
                         size = 8
                         break
+                    break
                 self.children = [
                     RtNode(
                         type.type(),
                         name=f"[{i:2}]",
                         offset=i * size,
                     )
-                    for i in range(0, type.value)
+                    for i in range(0, min(type.value, 16))
                 ]
                 break
             elif type.tag == ValueTag.Struct:

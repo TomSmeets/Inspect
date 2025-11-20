@@ -118,6 +118,7 @@ def load(path: str) -> Value:
             return [value]
         elif die.tag == "DW_TAG_structure_type" or die.tag == "DW_TAG_class_type" or die.tag == "DW_TAG_union_type":
             value = value_new(die, ValueTag.Struct)
+            value.value = die.attributes["DW_AT_byte_size"].value
             value.children = visit_children(die, ["DW_TAG_member"])
             return [value]
         elif die.tag == "DW_TAG_member":
@@ -127,6 +128,7 @@ def load(path: str) -> Value:
             return [value]
         elif die.tag == "DW_TAG_enumeration_type":
             value = value_new(die, ValueTag.Enum)
+            value.value = die.attributes["DW_AT_byte_size"].value
             value.children = visit_children(die, ["DW_TAG_enumerator"])
             return [value]
         elif die.tag == "DW_TAG_enumerator":
