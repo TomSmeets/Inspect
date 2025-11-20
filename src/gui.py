@@ -7,13 +7,13 @@ from client import Client
 
 
 class RtNode:
-    def __init__(self, value: Value,  name: str = None, offset: int = 0):
-        self.name  = name
+    def __init__(self, value: Value, name: str = None, offset: int = 0):
+        self.name = name
         self.value = value
-        self.text  = None
+        self.text = None
         self.children = []
         self.offset = offset
-        self.addr  = 0
+        self.addr = 0
 
         if self.value.tag == ValueTag.Variable:
             self.offset = self.value.value
@@ -88,7 +88,14 @@ class RtNode:
                     elif array_type.tag == ValueTag.Pointer:
                         size = 8
                         break
-                self.children = [RtNode(type.type(), name = f"[{i:2}]", offset = i * size, ) for i in range(0, type.value)]
+                self.children = [
+                    RtNode(
+                        type.type(),
+                        name=f"[{i:2}]",
+                        offset=i * size,
+                    )
+                    for i in range(0, type.value)
+                ]
                 break
             elif type.tag == ValueTag.Struct:
                 self.children = [RtNode(n) for n in type.children]
@@ -113,7 +120,7 @@ class RtNode:
         # text = f"0x{self.addr:016x} {text}"
         # text = self.value.pretty()
         if self.text != None:
-             text = f"{text} = {self.text}"
+            text = f"{text} = {self.text}"
         lines = [(self, x, text)]
         for c in self.children:
             lines += c.draw(x + 1)

@@ -78,14 +78,14 @@ def load(path: str) -> Value:
                 return []
             return [value]
         elif die.tag == "DW_TAG_variable":
-            if 'DW_AT_external' in die.attributes:
+            if "DW_AT_external" in die.attributes:
                 return []
 
             addr = die_to_addr(die)
             if not addr:
                 return []
 
-            if 'DW_AT_specification' in die.attributes:
+            if "DW_AT_specification" in die.attributes:
                 die = die.get_DIE_from_attribute("DW_AT_specification")
 
             name = die_name(die)
