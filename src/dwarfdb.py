@@ -142,7 +142,7 @@ def load(path: str) -> Value:
             return []
 
     # ==== Parsing ====
-    root = Value(ValueTag.Root, path)
+    root = Value(ValueTag.Namespace, path)
     for cu in dwarf.iter_CUs():  # type: CompileUnit
         cu_die: DIE = cu.get_top_DIE()
         root.children += visit(cu_die)

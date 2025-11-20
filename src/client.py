@@ -29,8 +29,9 @@ class Client:
         store_data = self.read(addr + 16, data_size)
         store_data = zlib.decompress(store_data)
         self.root = store.decode(store_data)
-        print(f"Found {len(self.root.children)} variables")
-        for var in self.root.children:
+        vars = self.root.variables()
+        print(f"Found {len(vars)} variables")
+        for var in vars:
             print(f"    {var.pretty()}")
 
         # Calculate base_address
@@ -66,7 +67,7 @@ class Client:
         self.write(addr, data.to_bytes(len, "little"))
 
     def find_variable(self, name: str) -> Value:
-        for var in self.root.children:
+        for var in self.root.variables():
             if var.name == name:
                 return var
         return None

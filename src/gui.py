@@ -17,7 +17,7 @@ class RtNode:
             self.name = self.value.pretty()
 
     def expand(self, client: Client):
-        if self.value.tag == ValueTag.Root:
+        if self.value.tag == ValueTag.Namespace:
             self.children = [RtNode(n, self.addr + n.value) for n in self.value.children]
             return
 

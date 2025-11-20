@@ -3,7 +3,7 @@ from typing import Self
 
 
 class ValueTag(Enum):
-    Root = 0
+    Namespace = 0
     Variable = 1
     BaseType = 2
     Pointer = 3
@@ -12,7 +12,6 @@ class ValueTag(Enum):
     Enum = 6
     EnumValue = 7
     Typedef = 8
-    Namespace = 9
 
 
 class Value:
@@ -155,16 +154,25 @@ class Value:
 
         visit(self)
 
+    def variables(self) -> list[Self]:
+        if self.tag == ValueTag.Variable:
+            return [self]
+
+        if self.tag == ValueTag.Namespace:
+            return [v for c in self.children for v in c.variables()]
+
+        return []
+
 
 def test_dedup0():
-    value = Value(ValueTag.Root, "root")
+    value = Value(ValueTag.Namespace, "root")
     value.deduplicate()
     assert value.name == "root"
     assert value.children == []
 
 
 def test_dedup_do_nothing():
-    value = Value(ValueTag.Root, "root")
+    value = Value(ValueTag.Namespace, "root")
     cu0 = Value(ValueTag.Variable, "CU0")
     cu1 = Value(ValueTag.Variable, "CU1")
 
@@ -178,7 +186,7 @@ def test_dedup_do_nothing():
 
 
 def test_dedup1():
-    value = Value(ValueTag.Root, "root")
+    value = Value(ValueTag.Namespace, "root")
     cu0 = Value(ValueTag.Variable, "CU0")
     cu1 = Value(ValueTag.Variable, "CU1")
     cu2 = Value(ValueTag.Variable, "CU0")
@@ -192,7 +200,7 @@ def test_dedup1():
 
 
 def test_dedup2():
-    value = Value(ValueTag.Root, "root")
+    value = Value(ValueTag.Namespace, "root")
     cu0 = Value(ValueTag.Variable, "CU0")
     cu1 = Value(ValueTag.Variable, "CU1")
     cu2 = Value(ValueTag.Variable, "CU0")
@@ -211,7 +219,7 @@ def test_dedup2():
 
 
 def test_dedup3():
-    value = Value(ValueTag.Root, "root")
+    value = Value(ValueTag.Namespace, "root")
     cu0 = Value(ValueTag.Variable, "CU0")
     cu1 = Value(ValueTag.Variable, "CU0")
     cu2 = Value(ValueTag.Variable, "CU0")
@@ -231,7 +239,7 @@ def test_dedup3():
 
 
 def test_dedup4():
-    value = Value(ValueTag.Root, "root")
+    value = Value(ValueTag.Namespace, "root")
     cu0 = Value(ValueTag.Variable, "CU0")
     cu1 = Value(ValueTag.Variable, "CU0")
     cu2 = Value(ValueTag.Variable, "CU0")
@@ -251,7 +259,7 @@ def test_dedup4():
 
 
 def test_dedup5():
-    root = Value(ValueTag.Root, "Root")
+    root = Value(ValueTag.Namespace, "Root")
     cu0 = Value(ValueTag.Variable, "CU0")
     cu1 = Value(ValueTag.Variable, "CU1")
     cu2 = Value(ValueTag.Variable, "CU1")
