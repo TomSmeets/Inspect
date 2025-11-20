@@ -92,6 +92,7 @@ def patch(input: str, target: [str]):
 
     print(f"Deduplicating...")
     value.deduplicate()
+    value.sort()
     value.debug_print()
     print(f"Encoding...")
     data = store.encode(value)

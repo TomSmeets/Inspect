@@ -70,6 +70,11 @@ class Value:
             return self.name
         return None
 
+    def is_namespace_empty(self) -> bool:
+        if self.tag != ValueTag.Namespace:
+            return False
+        return all(c.is_namespace_empty() for c in self.children)
+
     def debug_print(self):
         skip = set()
 
@@ -130,6 +135,14 @@ class Value:
 
         return values_are_equal(self, other, [], [])
 
+    def remove_empty_namespaces(self):
+        if self.tag != ValueTag.Namespace:
+            return
+
+        self.children = [c for c in self.children if not c.is_namespace_empty()]
+        for c in self.children:
+            c.remove_empty_namespaces()
+
     def deduplicate(self):
         """Deduplicate equal values in the tree"""
 
@@ -164,6 +177,15 @@ class Value:
             return [v for c in self.children for v in c.variables()]
 
         return []
+
+    def sort(self, parents: list[Self] = []):
+        if self in parents:
+            return
+
+        self.children.sort(key = lambda k: (k.tag, k.name, k.value))
+
+        for c in self.children:
+            c.sort(parents + [ self ]);
 
 
 def test_dedup0():
