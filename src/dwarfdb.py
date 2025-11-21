@@ -117,6 +117,8 @@ def load(path: str) -> Value:
                     value.value *= child_die.attributes["DW_AT_upper_bound"].value + 1
             return [value]
         elif die.tag == "DW_TAG_structure_type" or die.tag == "DW_TAG_class_type" or die.tag == "DW_TAG_union_type":
+            if "DW_AT_declaration" in die.attributes:
+                return []
             value = value_new(die, ValueTag.Struct)
             value.value = die.attributes["DW_AT_byte_size"].value
             value.children = visit_children(die, ["DW_TAG_member"])
