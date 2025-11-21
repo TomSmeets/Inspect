@@ -125,7 +125,7 @@ class RtNode:
                         size = array_type.value
                         break
                     elif array_type.tag == ValueTag.Pointer:
-                        size = 8
+                        size = array_type.value
                         break
                     break
                 self.children = [
@@ -262,9 +262,9 @@ class Gui:
             if indent >= size_x:
                 indent = size_x - 1
 
-            text = f"| "
-            text += f"0x{node.addr:016x}"
-            text += node.name
+            text = f"|"
+            text += f" 0x{node.addr:016x}"
+            text += " " + node.name
             if self.edit_mode and node == cur_node:
                 text += " = " + self.edit_text
             elif node.text is not None:
