@@ -180,8 +180,8 @@ class Gui:
         # List of flattend nodes and indentation level
         self.lines: list[(RtNode, int)] = []
 
-        self.edit_mode:bool = False
-        self.edit_text:str = ""
+        self.edit_mode: bool = False
+        self.edit_text: str = ""
 
     def update(self):
         self.node.update(self.client, self.client.base_address)
@@ -254,7 +254,7 @@ class Gui:
         cur_node = self.cursor_node()
 
         cursor_pos = (0, 0)
-        for node, x in self.lines[self.scroll:]:
+        for node, x in self.lines[self.scroll :]:
             if y >= size_y:
                 break
 
@@ -269,7 +269,6 @@ class Gui:
                 text += " = " + self.edit_text
             elif node.text is not None:
                 text += " = " + node.text
-
 
             # value = node.read_value(self.client)
             # if value:
@@ -300,7 +299,6 @@ def main():
     client = Client()
     client.connect(args.host, args.port, args.symbol)
 
-
     def gui_main(scr):
         gui = Gui(client)
         curses.cbreak()
@@ -324,12 +322,12 @@ def main():
             cursor_node = gui.cursor_node()
 
             if gui.edit_mode:
-                if k == '\x1b':
+                if k == "\x1b":
                     gui.edit_mode = False
                     gui.edit_text = ""
-                elif k == 'KEY_BACKSPACE':
+                elif k == "KEY_BACKSPACE":
                     gui.edit_text = gui.edit_text[:-1]
-                elif k == '\n':
+                elif k == "\n":
                     gui.edit_mode = False
                     cursor_node.write(gui.client, gui.edit_text)
                     gui.edit_text = ""
@@ -340,7 +338,7 @@ def main():
                     break
                 elif k == "\x1b":
                     break
-                elif k == "c" or k == '\n':
+                elif k == "c" or k == "\n":
                     if cursor_node.can_edit:
                         gui.edit_mode = True
                 elif k == "j":

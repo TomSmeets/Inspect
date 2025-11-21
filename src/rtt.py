@@ -3,6 +3,7 @@ import time
 from value import Value, ValueTag
 from client import Client
 
+
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-c", "--host", default="localhost", help="Router host")
@@ -17,7 +18,7 @@ def main():
     rtt_addr = client.base_address + val.value
     rtt_size_addr = rtt_addr + 40
     rtt_woff_addr = rtt_addr + 44
-    rtt_buff_ptr_addr = rtt_addr + 44 - 0xc + 0xc0
+    rtt_buff_ptr_addr = rtt_addr + 44 - 0xC + 0xC0
 
     max_size = client.read_int(rtt_size_addr, 4)
     buff_addr = client.read_int(rtt_buff_ptr_addr, 8)
@@ -37,5 +38,5 @@ def main():
         last_off = new_off % max_size
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
