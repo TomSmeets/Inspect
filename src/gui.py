@@ -42,7 +42,9 @@ class RtNode:
                     self.text = "NULL"
                     break
             elif type.tag == ValueTag.Enum:
-                self.text = "ENUM"
+                data = client.read_int(self.addr, type.value)
+                tag = [c for c in type.children if c.value == data]
+                self.text = f"{tag[0].name} ({data})" if tag != [] else str(data)
                 break
             elif type.tag == ValueTag.Struct:
                 self.text = "{}"
@@ -182,6 +184,7 @@ class Gui:
 
         self.edit_mode: bool = False
         self.edit_text: str = ""
+        self.debug = False
 
     def update(self):
         self.node.update(self.client, self.client.base_address)
@@ -227,8 +230,6 @@ class Gui:
         while self.cursor_prev():
             if self.cursor_x() < cur_x:
                 break
-        # if self.cursor_node().children != []:
-        #     self.cursor_node().collapse()
 
     def cursor_toggle(self):
         if self.cursor_node().children == []:
@@ -263,7 +264,8 @@ class Gui:
                 indent = size_x - 1
 
             text = f"|"
-            text += f" 0x{node.addr:016x}"
+            if self.debug:
+                text += f" 0x{node.addr:016x}"
             text += " " + node.name
             if self.edit_mode and node == cur_node:
                 text += " = " + self.edit_text
@@ -338,6 +340,8 @@ def main():
                     break
                 elif k == "\x1b":
                     break
+                elif k == "d":
+                    gui.debug = not gui.debug
                 elif k == "c" or k == "\n":
                     if cursor_node.can_edit:
                         gui.edit_mode = True

@@ -2,11 +2,19 @@ use std::ptr::null_mut;
 
 mod inspect;
 
+enum Value {
+    A = 0,
+    B = 3,
+    X = 5,
+}
+
 struct App {
     counter: u32,
     data1: &'static str,
     data2: String,
+    value: Value,
 }
+
 
 static mut APP: *mut App = null_mut();
 
@@ -15,6 +23,7 @@ fn main() {
         counter: 1337,
         data1: "Hello World!",
         data2: "Hello World!".into(),
+        value: Value::B,
     };
     unsafe {
         APP = &mut app;
