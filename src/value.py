@@ -13,6 +13,9 @@ class ValueTag(IntEnum):
     EnumValue = 7
     Typedef = 8
 
+    def __str__(self):
+        return self.name
+
 
 class Value:
     def __init__(self, tag: ValueTag, name: str, value: int = 0):
